@@ -2,7 +2,7 @@ PRG            =uC_code
 
 OBJ            = $(PRG).o
 
-MCU_TARGET     = atmega328
+MCU_TARGET     = atmega328p
 OPTIMIZE       = -O3    # options are 1, 2, 3, s
 CC             = avr-gcc
 F_CPU          = 16000000UL
@@ -29,7 +29,7 @@ clean:
 #setup for for USB programmer
 #may need to be changed depending on your programmer
 program: $(PRG).hex
-	sudo avrdude -c usbasp -p m328p -e -U flash:w:$(PRG).hex
+	sudo avrdude -F -c usbasp -p m328p -e -U flash:w:$(PRG).hex
 
 lst:  $(PRG).lst
 
