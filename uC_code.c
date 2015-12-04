@@ -19,7 +19,7 @@
 #define sram_WRMR 0x01 
 uint8_t add_l=100;
 uint8_t add_m=100;//Address pointers
-uint8_t add_h=100;
+uint8_t add_h=1;// only zero are used, any other bits are ignored
 
 volatile uint16_t delay=500;
 
@@ -28,10 +28,7 @@ void spi_init()
 {
 //DDRB houses SPI pins SCK-5 MOSI-3 MISO-4 used for programing
 DDRB|=(1<<5)|(1<<3)|(0<<4)|(1<<2)|(1<<1);
-//PORTB|=(1<<4);
-//PORT D holds all chip select pins. Set to output
-//DDRD=(1<<sensor1_cs)|(1<<sensor2_cs)|(1<<sensor3_cs);
-DDRC=(1<<sram_cs);
+DDRC=(1<<sram_cs);//Sets up chip select for sram 
 PORTC=(1<<sram_cs);
 SPCR=(1<<SPE)|(1<<MSTR)|(1<<SPR0);  //master mode sets 2x speed
 SPSR=(1<<SPI2X);
@@ -48,7 +45,7 @@ SPDR=sram_WRMR;//write mode command
 while(bit_is_clear(SPSR,SPIF)){}//spin till done
 SPDR=0x00;//write new mode
 while(bit_is_clear(SPSR,SPIF)){}//spin till done
-_delay_ms(0.01);
+//_delay_ms(0.01);
 SPDR=sram_RDMR;//send read command
 while(bit_is_clear(SPSR,SPIF)){}
 SPDR=0xFF; //Send junk
@@ -68,66 +65,79 @@ void SD_write(){}//end sram_write()
 //Read byte(s) from sram
 //arguments address, number of bytes
 uint8_t sram_read(uint8_t low,uint8_t mid, uint8_t high){
-PORTC &=(0<<sram_cs);
-SPDR=sram_READ;
+PORTC &=~(1<<sram_cs);//select sram chip on SPI bus
+SPDR=sram_READ; //Send the read command to sram
+while(bit_is_clear(SPSR,SPIF)){}//This line shows up a lot in this code, it waits for the byte to be sent
+SPDR=high;//High address byte
 while(bit_is_clear(SPSR,SPIF)){}
-SPDR=low;
+SPDR=mid;//Mid address byte
 while(bit_is_clear(SPSR,SPIF)){}
-SPDR=mid;
-while(bit_is_clear(SPSR,SPIF)){}
-SPDR=high;
+SPDR=low;//Low address byte
 while(bit_is_clear(SPSR,SPIF)){}
 SPDR=0xFF; //Junk
 while(bit_is_clear(SPSR,SPIF)){}
-PORTC |=(1<<sram_cs);
-return SPDR;
+PORTC |=(1<<sram_cs);//deactivate sram chip
+return SPDR;//return the byte received
 
 }//end sram_read()
 
 //Will write byte to sram
 void sram_write(uint8_t low,uint8_t mid, uint8_t high,uint8_t data){
-PORTC &=(0<<sram_cs);
-SPDR=sram_WRITE;
+PORTC &=~(1<<sram_cs);//select sram chip on SPI bus
+SPDR=sram_WRITE;//send write command
 while(bit_is_clear(SPSR,SPIF)){}
-SPDR=high;
+SPDR=high;//Send high address byte
 while(bit_is_clear(SPSR,SPIF)){}
-SPDR=mid;
+SPDR=mid;//mid address byte
 while(bit_is_clear(SPSR,SPIF)){}
-SPDR=low;
+SPDR=low;//low address byte
 while(bit_is_clear(SPSR,SPIF)){}
-SPDR=data;
+SPDR=data;//send data byte
 while(bit_is_clear(SPSR,SPIF)){}
-PORTC |=(1<<sram_cs);
+PORTC |=(1<<sram_cs);//deselect sram chip
 }
 
 int main()
 {
-spi_init(); 
-PORTB &=(0<<1);
+spi_init(); //initialize SPI bus as master
+
+
+PORTB |=(1<<1)|(1<<2);
+PORTB &=~(1<<2);
+_delay_ms(200);
+PORTB |=(1<<2);
+PORTB &=~(1<<1);// blinks both lights to show the program is starting
 _delay_ms(200);
 PORTB |=(1<<1);
-sram_init();
+_delay_ms(1000);
+sram_init();//initialize sram
 while(1)
 {
-//_delay_ms(200);
-//PORTB|=(1<<1);
-//sram_init();
-//_delay_ms(200);
-//PORTB |=(1<<1);
 uint8_t i=0;
-for(i=0;i<100;i++)
-{
-sram_write(i,add_m,add_h,i);
-}
-for(i=0;i<100;i++)
-{
-if (sram_read(i,add_m,add_h)==i)
-{
-PORTB ^=~(0<<1);
-_delay_ms(200);
-//PORTB |=(1<<1);
-}//if
-}
 
+//Load values into 10 memory locations
+//Zero is only skipped to avoid loading zero into the byte
+//since when the byte is read back, zero could also mean communication failed
+
+for(i=1;i<11;i++)
+{
+  sram_write(i,add_m,add_h,i);//only lower address byte is incremented 
+}//end loading for loop
+
+//change value in one spot in array as build in "error"
+sram_write(5,add_m,add_h,100);
+
+//check values in first 10 memory locations, one should be "wrong"
+for(i=1;i<11;i++)
+{
+  _delay_ms(100);
+  PORTB |=(1<<1)|(1<<2);
+  _delay_ms(100);
+  if (sram_read(i,add_m,add_h)==i){PORTB &=~(1<<1);}//Byte read back was correct  GREEN light
+  else{PORTB &=~(1<<2);}//Byte Read back was incorrect   RED light
+}//end for loop for checking values
+
+PORTB |=(1<<1)|(1<<2);//both lights off
+_delay_ms(1500);//wait 1.5 seconds before starting again
 } //end while 
 } //end main
