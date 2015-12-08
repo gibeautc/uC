@@ -114,29 +114,37 @@ sram_init();//initialize sram
 while(1)
 {
 uint8_t i=0;
-
+uint8_t m=0;
+//uint8_t h=0;
 //Load values into 10 memory locations
 //Zero is only skipped to avoid loading zero into the byte
 //since when the byte is read back, zero could also mean communication failed
-
-for(i=1;i<11;i++)
+//for(h=1;h<2;h++)
+//{
+for(m=1;m<255;m++)
+{
+for(i=1;i<255;i++)
 {
   sram_write(i,add_m,add_h,i);//only lower address byte is incremented 
 }//end loading for loop
-
+}
+//}
 //change value in one spot in array as build in "error"
-sram_write(5,add_m,add_h,100);
+//sram_write(125,add_m,add_h,25);
 
 //check values in first 10 memory locations, one should be "wrong"
-for(i=1;i<11;i++)
-{
-  _delay_ms(100);
-  PORTB |=(1<<1)|(1<<2);
-  _delay_ms(100);
-  if (sram_read(i,add_m,add_h)==i){PORTB &=~(1<<1);}//Byte read back was correct  GREEN light
-  else{PORTB &=~(1<<2);}//Byte Read back was incorrect   RED light
-}//end for loop for checking values
 
+//for(h=1;h<2;h++)
+//{
+for(m=1;m<255;m++)
+{
+for(i=1;i<255;i++)
+{
+  if (sram_read(i,add_m,add_h)==i){PORTB &=~(1<<1);}//Byte read back was correct  GREEN light
+  else{PORTB |=(1<<1)|(1<<2);PORTB &=~(1<<2);_delay_ms(1000);}//Byte Read back was incorrect   RED light
+}//end for loop for checking values
+}
+//}
 PORTB |=(1<<1)|(1<<2);//both lights off
 _delay_ms(1500);//wait 1.5 seconds before starting again
 } //end while 
