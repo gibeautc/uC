@@ -17,7 +17,7 @@
 #define sram_WRITE 0x02
 #define sram_RDMR 0x05
 #define sram_WRMR 0x01 
-uint8_t add_l=100;
+uint8_t add_l=100;//Address pointers for the SRAM
 uint8_t add_m=100;//Address pointers
 uint8_t add_h=1;// only zero are used, any other bits are ignored
 
