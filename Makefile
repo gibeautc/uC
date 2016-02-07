@@ -1,6 +1,6 @@
 PRG            =uC_code
 
-OBJ            = $(PRG).o
+OBJ            = $(PRG).o uart_functions.o
 
 MCU_TARGET     = atmega328p
 OPTIMIZE       = -O3    # options are 1, 2, 3, s
