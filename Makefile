@@ -13,7 +13,7 @@ override LDFLAGS       = -Wl,-Map,$(PRG).map
 OBJCOPY        = avr-objcopy
 OBJDUMP        = avr-objdump
 
-all: clearscreen $(PRG).elf lst text eeprom
+all: clearscreen $(PRG).elf lst text  # eeprom
 
 clearscreen:
 	clear

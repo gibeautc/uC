@@ -43,9 +43,19 @@
 uint8_t add_l=100;//Address pointers for the SRAM
 uint8_t add_m=100;//Address pointers
 uint8_t add_h=1;// only zero are used, any other bits are ignored
-
+char sd_buf[512];
 volatile uint16_t delay=500;
-//init the SD Card
+
+
+void i2c_init()
+{
+
+}
+
+void i2c_test()
+{
+
+}
 
 
 //SPI init will set up SPI 
@@ -70,6 +80,12 @@ void sd_write(uint16_t sector,char* buf)
   uart_puts(buf);
 
 }//end sd_write
+
+
+void sd_read(uint16_t sector)
+{
+
+}
 
 void sd_init()
 {
@@ -96,19 +112,20 @@ void sd_init()
   while(bit_is_clear(SPSR,SPIF)){}
   //Should be set up, send jumk and read in response, a good response is 0x01
   //_delay_ms(1);
-  for(i=0;i<=0xFF;i++)
+  uint8_t input=0;
+  for(i=0;i<=150;i++)
   {
     SPDR=0xFF;
     while(bit_is_clear(SPSR,SPIF)){}
-    uint8_t input=SPDR;
-    if(input!=0xFF){uart_puts("SD-Card Init: PASSED");break;}
-    if(i==0xFF){uart_puts("SD-Card Init: FAILED");}
+    input=SPDR;
+    if(input==0x01){uart_puts("SD-Card Init: PASSED\n");break;}
+    if(i==100){uart_puts("SD-Card Init: FAILED\n");break;}
   }
  // uart_puts("Bits are set:");
-  for(i=0;i<8;i++)
-  {
+  //for(i=0;i<8;i++)
+  //{
    // if(bit_is_set(input,i)){uart_putc(i+48);}
-  }
+  //}
   spi_init();  //resets spi to faster rate, and deselects SD 
 }
 
@@ -187,28 +204,32 @@ _delay_ms(1000);
 sram_init();//initialize sram
 char rx_char;
 sd_init();
-char sd_buf[10];
-uint8_t i=0;
-for(i=0;i<10;i++){sd_buf[i]='0';}
+uint16_t i=0;//used for for loops
+//*****Fix me*******  
+//should set to int 0 not char '0' but the ascii zero prints better for now
+for(i=0;i<512;i++){sd_buf[i]='0';}//sets inital buffer to zero values
 while(1)
 {
-  sd_write(1,sd_buf);
-  uart_puts("sd_write called....");
+  //sd_write(1,sd_buf);
+  //uart_puts("sd_write called....");
 //  uart_puts("\2 00001,04502,12403,04204,12005,13576,06507,65008,99909,13010,11111,\4");
 //  uart_puts("00001,00002,00003,00004,00005,\8\8\8\8,00007,00008,00009,00010,00011,\4");
   //uart_putc(4);
-  _delay_ms(1000);
-  continue;
-  uart_puts("Starting Testing");
+  //_delay_ms(1000);
+  //continue;
+  uart_puts("Starting Testing\n\n");
   uart_putc('\r');
   rx_char=uart_getc(); 
   if(rx_char=='c')
   {
+    uart_puts("Command line:\n\n");
     rx_char=uart_getc();
     while(rx_char!='c')
     {
-      if(rx_char=='r'){PORTB&=~(1<<2);PORTB |=(1<<1);}
-      if(rx_char=='g'){PORTB&=~(1<<1);PORTB |=(1<<2);}
+      if(rx_char=='s'){sd_init();}
+      if(rx_char=='w'){sd_write(1,sd_buf);}
+      if(rx_char=='r'){sd_read(1);uart_puts(sd_buf);}//buffer gets set to sector!!
+      if(rx_char=='i'){i2c_test();}
       rx_char=uart_getc();
     }
   }
@@ -235,9 +256,9 @@ while(1)
     if (sram_read(i,add_m,add_h)==i)
     {
       PORTB &=~(1<<1);
-      uart_puts("passed");
+      uart_puts("passed\n");
     }//Byte read back correct  GREEN light
-    else{PORTB &=~(1<<2);uart_puts("FAILED!!");}//Byte Read back was incorrect   RED light
+    else{PORTB &=~(1<<2);uart_puts("FAILED!!\n");}//Byte Read back was incorrect   RED light
   }//end for loop for checking values
 
   PORTB |=(1<<1)|(1<<2);//both lights off
