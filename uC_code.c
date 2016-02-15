@@ -3,10 +3,7 @@
 #include <util/delay.h>
 #include <avr/interrupt.h>
 #include "uart_functions.h"
-//#include "diskio.h"
-//#include "ff.h"
-//#include "ffconf.h"
-//#include "integer.h"
+//#include "sdcard.h"
 //Define the chip select bits for 1  sensor, sram, SD
 //also define the two sensor addresses for the I2C bus
 //all bits are on PORTD
@@ -22,11 +19,34 @@
 #define sram_WRITE 0x02
 #define sram_RDMR 0x05
 #define sram_WRMR 0x01 
+
+
+#define CMD0 0x00  //go idle cond   init card in spi mode if CS low
+#define CMD8 0x08  //send if cond   verify SD card interface operations condition
+#define CMD9 0x09  //read card specific data
+#define CMD10 0x0A //read card ID info
+#define CMD13 0x0D //read card statsus register
+#define CMD17 0x11 //read a single block from the card
+#define CMD24 0x18 //write a single data blcok to card
+#define CMD25 0x19 //write multiple blocks
+#define CMD32 0x20 //sets the address of first blcok to be erased
+#define CMD33 0x21 //sets the address of the last block to be erased
+#define CMD38 0x26 //erase previously selected blocks
+#define CMD55 0x37 // 
+#define CMD58 0x3A
+#define ACMD23 0x17
+#define ACMD41 0x29
+
+#define r1_ready_state 0x00
+#define r1_idle_state 0x01
+#define r1_illegal_command 0x04
 uint8_t add_l=100;//Address pointers for the SRAM
 uint8_t add_m=100;//Address pointers
 uint8_t add_h=1;// only zero are used, any other bits are ignored
 
 volatile uint16_t delay=500;
+//init the SD Card
+
 
 //SPI init will set up SPI 
 void spi_init()
@@ -34,12 +54,63 @@ void spi_init()
 //DDRB houses SPI pins SCK-5 MOSI-3 MISO-4 used for programing
 DDRB|=(1<<5)|(1<<3)|(0<<4)|(1<<2)|(1<<1);
 DDRD|=(1<<SD_cs);//sets chip select for SD
-PORTD &=~(1<<SD_cs);//deselect 
+PORTD |=(1<<SD_cs);//deselect 
 DDRC=(1<<sram_cs);//Sets up chip select for sram 
 PORTC=(1<<sram_cs);//deselect
+SPCR=0;
 SPCR=(1<<SPE)|(1<<MSTR)|(1<<SPR0);  //master mode sets 2x speed
 SPSR=(1<<SPI2X);
 }//end spi_init()
+
+void sd_write(uint16_t sector,char* buf)
+{
+  uart_puts("Sector: ");
+  uart_putc((uint8_t)sector+48);
+  uart_puts("\n");
+  uart_puts(buf);
+
+}//end sd_write
+
+void sd_init()
+{
+  //SPSR|=(1<<SPI2X);		//resets to slower speed
+  SPCR=0;
+  SPCR=(1<<SPE)|(1<<MSTR)|(1<<SPR1); 
+  PORTD |=1<<SD_cs;   //set SD select bit high for reset
+  //need to send at least 74 consecutive 1's (So i will try 10 bytes)
+  uint8_t i=0;
+  for(i=0;i<11;i++)
+  {
+    SPDR=0xFF;//Send all 1's
+    while(bit_is_clear(SPSR,SPIF)){} //spin till done
+  }
+  PORTD &=~(1<<SD_cs);//select SD Card
+  SPDR=0x40;
+  while(bit_is_clear(SPSR,SPIF)){}
+  for(i=0;i<4;i++)
+  {
+    SPDR=0x00;
+    while(bit_is_clear(SPSR,SPIF)){}
+  }
+  SPDR=0x95;
+  while(bit_is_clear(SPSR,SPIF)){}
+  //Should be set up, send jumk and read in response, a good response is 0x01
+  //_delay_ms(1);
+  for(i=0;i<=0xFF;i++)
+  {
+    SPDR=0xFF;
+    while(bit_is_clear(SPSR,SPIF)){}
+    uint8_t input=SPDR;
+    if(input!=0xFF){uart_puts("SD-Card Init: PASSED");break;}
+    if(i==0xFF){uart_puts("SD-Card Init: FAILED");}
+  }
+ // uart_puts("Bits are set:");
+  for(i=0;i<8;i++)
+  {
+   // if(bit_is_set(input,i)){uart_putc(i+48);}
+  }
+  spi_init();  //resets spi to faster rate, and deselects SD 
+}
 
 
 void sram_init()
@@ -65,8 +136,6 @@ void sram_init()
 void check_sensor(){}//end check_sensor
 	//Writes byte(s) to SD card
 	//possible arguments address, number of bytes, data
-void SD_write(){}//end sram_write()
-
 
 //Read byte(s) from sram
 //arguments address, number of bytes
@@ -117,8 +186,19 @@ PORTB |=(1<<1);
 _delay_ms(1000);
 sram_init();//initialize sram
 char rx_char;
+sd_init();
+char sd_buf[10];
+uint8_t i=0;
+for(i=0;i<10;i++){sd_buf[i]='0';}
 while(1)
 {
+  sd_write(1,sd_buf);
+  uart_puts("sd_write called....");
+//  uart_puts("\2 00001,04502,12403,04204,12005,13576,06507,65008,99909,13010,11111,\4");
+//  uart_puts("00001,00002,00003,00004,00005,\8\8\8\8,00007,00008,00009,00010,00011,\4");
+  //uart_putc(4);
+  _delay_ms(1000);
+  continue;
   uart_puts("Starting Testing");
   uart_putc('\r');
   rx_char=uart_getc(); 
@@ -132,7 +212,7 @@ while(1)
       rx_char=uart_getc();
     }
   }
-  uint8_t i=0;
+ // uint8_t i=0;
   //Load values into 10 memory locations
   //Zero is only skipped to avoid loading zero into the byte
   //since when the byte is read back, zero could also mean communication failed
