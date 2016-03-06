@@ -3,6 +3,7 @@
 #include <util/delay.h>
 #include <avr/interrupt.h>
 #include "uart_functions.h"
+#include "i2c_master.h"
 //#include "sdcard.h"
 //Define the chip select bits for 1  sensor, sram, SD
 //also define the two sensor addresses for the I2C bus
@@ -19,8 +20,6 @@
 #define sram_WRITE 0x02
 #define sram_RDMR 0x05
 #define sram_WRMR 0x01 
-
-
 #define CMD0 0x00  //go idle cond   init card in spi mode if CS low
 #define CMD8 0x08  //send if cond   verify SD card interface operations condition
 #define CMD9 0x09  //read card specific data
@@ -36,6 +35,8 @@
 #define CMD58 0x3A
 #define ACMD23 0x17
 #define ACMD41 0x29
+#define CRC   35   //this is the CRC char with a 1 shifted in for SD Card 
+
 
 #define r1_ready_state 0x00
 #define r1_idle_state 0x01
@@ -45,16 +46,30 @@ uint8_t add_m=100;//Address pointers
 uint8_t add_h=1;// only zero are used, any other bits are ignored
 char sd_buf[512];
 volatile uint16_t delay=500;
-
-
-void i2c_init()
-{
-
-}
+uint8_t sd_add[4];
+uint8_t arrayI=0;
 
 void i2c_test()
 {
+  //i2c_init();
+  //uint8_t data[5]={1,2,3,4,5};
+  //uint8_t x=0;
+  uart_puts("Starting I2C test\n\n");
+  DDRC|=(1<<5);
 
+  PORTC&=~(1<<5);
+  _delay_ms(1000);
+  PORTC|=(1<<5);
+  //i2c_start(100);
+  //for(x=0;x<100;x++)
+  //{
+   // uart_putc('.'); 
+    //i2c_write(x);
+    //_delay_ms(100);
+    //while(twi_busy()){}
+  //}
+  //i2c_stop();
+  uart_puts("\nI2C Test complete\n");
 }
 
 
@@ -65,20 +80,54 @@ void spi_init()
 DDRB|=(1<<5)|(1<<3)|(0<<4)|(1<<2)|(1<<1);
 DDRD|=(1<<SD_cs);//sets chip select for SD
 PORTD |=(1<<SD_cs);//deselect 
-DDRC=(1<<sram_cs);//Sets up chip select for sram 
-PORTC=(1<<sram_cs);//deselect
+DDRC |=(1<<sram_cs);//Sets up chip select for sram 
+PORTC|=(1<<sram_cs);//deselect
 SPCR=0;
 SPCR=(1<<SPE)|(1<<MSTR)|(1<<SPR0);  //master mode sets 2x speed
 SPSR=(1<<SPI2X);
 }//end spi_init()
 
-void sd_write(uint16_t sector,char* buf)
+char SPI_send(char chr)
 {
-  uart_puts("Sector: ");
-  uart_putc((uint8_t)sector+48);
-  uart_puts("\n");
-  uart_puts(buf);
+  char receivedchar=0;
+  SPDR=chr;
+  while(bit_is_clear(SPSR,SPIF)){}
+  receivedchar=SPDR;
+  return (receivedchar);
 
+}
+
+
+char sd_cmd(char cmd,uint16_t ArgH,uint16_t ArgL,char crc)
+{
+
+  for(arrayI=0;arrayI<4;arrayI++)
+  {
+    sd_add[arrayI]=arrayI*50;
+
+  }
+
+  //uint16_t byte_count=0;
+  //uart_puts("Sector: ");
+  //uart_putc((uint8_t)sector+48);
+  //uart_puts("\n");
+  //uart_puts(buf);
+  
+  SPCR=0;
+  SPCR=(1<<SPE)|(1<<MSTR)|(1<<SPR1);
+  PORTD &=~(1<<SD_cs);
+  SPI_send(0xFF);
+  SPI_send(cmd);
+  SPI_send((uint8_t)(ArgH>>8));
+  SPI_send((uint8_t)ArgH);
+  SPI_send((uint8_t)(ArgL>>8));
+  SPI_send((uint8_t)ArgL);
+  SPI_send(crc);
+  SPI_send(0xFF);
+  SPI_send(0xFF);
+  uart_putc(SPDR+48);
+  spi_init();
+  return(SPDR);
 }//end sd_write
 
 
@@ -89,6 +138,8 @@ void sd_read(uint16_t sector)
 
 void sd_init()
 {
+    
+
   //SPSR|=(1<<SPI2X);		//resets to slower speed
   SPCR=0;
   SPCR=(1<<SPE)|(1<<MSTR)|(1<<SPR1); 
@@ -208,6 +259,7 @@ uint16_t i=0;//used for for loops
 //*****Fix me*******  
 //should set to int 0 not char '0' but the ascii zero prints better for now
 for(i=0;i<512;i++){sd_buf[i]='0';}//sets inital buffer to zero values
+sei();
 while(1)
 {
   //sd_write(1,sd_buf);
@@ -227,7 +279,7 @@ while(1)
     while(rx_char!='c')
     {
       if(rx_char=='s'){sd_init();}
-      if(rx_char=='w'){sd_write(1,sd_buf);}
+      if(rx_char=='w'){sd_cmd(0x58,0,512,0xFF);}//sets write mode to 512
       if(rx_char=='r'){sd_read(1);uart_puts(sd_buf);}//buffer gets set to sector!!
       if(rx_char=='i'){i2c_test();}
       rx_char=uart_getc();
