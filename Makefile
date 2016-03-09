@@ -1,6 +1,6 @@
 PRG            =uC_code
 
-OBJ            = $(PRG).o uart_functions.o i2c_master.o 
+OBJ            = $(PRG).o uart_functions.o twi_master.o MPU9250.o 
 
 MCU_TARGET     = atmega328p
 OPTIMIZE       = -O3    # options are 1, 2, 3, s

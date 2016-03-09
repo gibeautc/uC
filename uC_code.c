@@ -1,9 +1,13 @@
 #define F_CPU  8000000UL
 #include <avr/io.h>
+#include <stdlib.h>
+#include <string.h> 
 #include <util/delay.h>
 #include <avr/interrupt.h>
 #include "uart_functions.h"
 #include "i2c_master.h"
+#include "MPU9250.h"
+#include "twi_master.h"
 //#include "sdcard.h"
 //Define the chip select bits for 1  sensor, sram, SD
 //also define the two sensor addresses for the I2C bus
@@ -41,9 +45,9 @@
 #define r1_ready_state 0x00
 #define r1_idle_state 0x01
 #define r1_illegal_command 0x04
-uint8_t add_l=100;//Address pointers for the SRAM
-uint8_t add_m=100;//Address pointers
-uint8_t add_h=1;// only zero are used, any other bits are ignored
+uint8_t add_l=0;//Address pointers for the SRAM
+uint8_t add_m=0;//Address pointers
+uint8_t add_h=0;// only zero are used, any other bits are ignored
 char sd_buf[512];
 volatile uint16_t delay=500;
 uint8_t sd_add[4];
@@ -100,32 +104,23 @@ char SPI_send(char chr)
 
 char sd_cmd(char cmd,uint16_t ArgH,uint16_t ArgL,char crc)
 {
-
-  for(arrayI=0;arrayI<4;arrayI++)
-  {
-    sd_add[arrayI]=arrayI*50;
-
-  }
-
-  //uint16_t byte_count=0;
-  //uart_puts("Sector: ");
-  //uart_putc((uint8_t)sector+48);
-  //uart_puts("\n");
-  //uart_puts(buf);
-  
   SPCR=0;
-  SPCR=(1<<SPE)|(1<<MSTR)|(1<<SPR1);
+  SPCR=(1<<SPE)|(1<<MSTR)|(1<<SPR1)|(1<<SPR0);
   PORTD &=~(1<<SD_cs);
   SPI_send(0xFF);
-  SPI_send(cmd);
+  SPI_send(cmd|0x40);//cmd is less then 64 but needs to start with 01
   SPI_send((uint8_t)(ArgH>>8));
   SPI_send((uint8_t)ArgH);
   SPI_send((uint8_t)(ArgL>>8));
   SPI_send((uint8_t)ArgL);
   SPI_send(crc);
-  SPI_send(0xFF);
-  SPI_send(0xFF);
-  uart_putc(SPDR+48);
+  //SPI_send(0xFF);
+  //SPI_send(0xFF);
+  //SPI_send(0xFF);
+  for(arrayI=0;arrayI<10;arrayI++)
+  {
+   uart_putc(SPI_send(0xFF)+48);
+  }
   spi_init();
   return(SPDR);
 }//end sd_write
@@ -142,7 +137,7 @@ void sd_init()
 
   //SPSR|=(1<<SPI2X);		//resets to slower speed
   SPCR=0;
-  SPCR=(1<<SPE)|(1<<MSTR)|(1<<SPR1); 
+  SPCR=(1<<SPE)|(1<<MSTR)|(1<<SPR1)|(1<<SPR0); 
   PORTD |=1<<SD_cs;   //set SD select bit high for reset
   //need to send at least 74 consecutive 1's (So i will try 10 bytes)
   uint8_t i=0;
@@ -201,10 +196,6 @@ void sram_init()
 	PORTC |=(1<<sram_cs);
 }//end sram_init
 
-void check_sensor(){}//end check_sensor
-	//Writes byte(s) to SD card
-	//possible arguments address, number of bytes, data
-
 //Read byte(s) from sram
 //arguments address, number of bytes
 uint8_t sram_read(uint8_t low,uint8_t mid, uint8_t high){
@@ -225,7 +216,7 @@ uint8_t sram_read(uint8_t low,uint8_t mid, uint8_t high){
 }//end sram_read()
 
 //Will write byte to sram
-void sram_write(uint8_t low,uint8_t mid, uint8_t high,uint8_t data){
+void sram_write(uint8_t low,uint8_t mid, uint8_t high,int8_t data){
 	PORTC &=~(1<<sram_cs);//select sram chip on SPI bus
 	SPDR=sram_WRITE;//send write command
 	while(bit_is_clear(SPSR,SPIF)){}
@@ -239,6 +230,147 @@ void sram_write(uint8_t low,uint8_t mid, uint8_t high,uint8_t data){
 	while(bit_is_clear(SPSR,SPIF)){}
 	PORTC |=(1<<sram_cs);//deselect sram chip
 }//end sram_write
+
+void init_tcnt2()
+{
+ ASSR |=(0<<AS2);//Run of 32khz osc
+ TIMSK2=0x00;  //reset TIMSK
+ TIMSK2 |=(1<<TOIE2);//turns on comp match interupt
+ TCCR2A=0;
+ TCCR2B=(1<<CS21)|(1<<CS20);//Normal mode prescale 32 should give a 1ms count
+ 
+}
+
+
+volatile long int count_t=0;
+
+
+//records on shot in sram (20seconds) returns the number of records
+//need to add error checking on high byte of address (only 0 and 1)
+void add_inc()
+{
+  add_l++;
+  if(add_l>=255)
+  {
+    add_l=0;
+    add_m++;
+    if(add_m>=255)
+    {
+      add_m=0;
+      add_h=1;
+    }
+  }
+ 
+}//end add_inc
+ 
+uint16_t record_shot()
+{
+  uint16_t num_records=0;
+  int16_t ax,ay,az;
+  int16_t gx,gy,gz;
+  int16_t mx,my,mz;
+  add_l=0;
+  add_m=0;//reset addresses to zero
+  add_h=0;
+  uart_puts("Shot Started...\n");
+  //get 20 seconds of data
+  //each sensor is 14 bytes of data
+  //each byte is roughtly 2.5 ms 
+  uint16_t i=0;
+  uint8_t x=0;
+  uint8_t data_count=0;
+  uint8_t data[20];
+  char addL[5];
+  char addM[5];
+  char addH[5];
+  count_t=0;
+  while(count_t<20000)//for full shot change back to 20000************
+  {
+    //write time to SRAM
+    sram_write(add_l,add_m,add_h,(int8_t) (count_t>>8));
+    add_inc();
+    sram_write(add_l,add_m,add_h,(int8_t) count_t);
+    add_inc();
+    
+  for(x=0;x<3;x++)//each of three sensors
+  {
+    getAccel(&mx,&my,&mz);//fetch all axis compass readings
+    
+    data[0]=(int8_t)(ax>>8); 
+    data[1]=(int8_t)ax;
+    data[2]=(int8_t)(ay>>8);
+    data[3]=(int8_t)ay;
+    data[4]=(int8_t)(az>>8);
+    data[5]=(int8_t)az;
+    while(twi_busy()){}
+
+
+    getGyro(&gx,&gy,&gz);
+    while(twi_busy()){}
+    data[6]=(int8_t)(gx>>8); 
+    data[7]=(int8_t)gx;
+    data[8]=(int8_t)(gy>>8);
+    data[9]=(int8_t)gy;
+    data[10]=(int8_t)(gz>>8);
+    data[11]=(int8_t)gz;
+   
+
+    getMag(&mx,&my,&mz);
+    while(twi_busy()){}
+    data[12]=(int8_t)(mx>>8); 
+    data[14]=(int8_t)mx;
+    data[14]=(int8_t)(my>>8);
+    data[15]=(int8_t)my;
+    data[16]=(int8_t)(mz>>8);
+    data[17]=(int8_t)mz;
+    
+
+  for(i=0;i<18;i++);
+    sram_write(add_l,add_m,add_h,data[i]);
+    add_inc(); 
+    //getGyro(&mx,&my,&mz);
+  } 
+ /* 
+  itoa(mx,addL,10);
+  itoa(my,addM,10);
+  itoa(mz,addH,10);
+  uart_puts("X axis: ");
+  uart_puts(addL);
+  uart_puts("\nY axis: ");
+  uart_puts(addM);
+  uart_puts("\nZ axis: ");
+  uart_puts(addH);
+  uart_putc('\n');
+*/
+   num_records++;
+  }//end of time interval
+PORTB ^=(1<<1);//turn off light
+  itoa(add_l,addL,10);
+  itoa(add_m,addM,10);
+  itoa(add_h,addH,10);
+  uart_puts("Address Low: ");
+  uart_puts(addL);
+  uart_puts("\nAddress Mid: ");
+  uart_puts(addM);
+  uart_puts("\nAddress High: ");
+  uart_puts(addH);
+  uart_putc('\n');
+return num_records;
+}//end record_shot
+
+
+ISR(TIMER2_OVF_vect)
+{
+count_t++;
+}//end Timer 0 ISR
+
+
+//Used to catch unhandled interupts 
+ISR(BADISR_vect)
+{
+  uart_puts("Unhandled Interupt caught!!!!");
+}//end Bad ISR
+
 
 int main()
 {
@@ -254,14 +386,32 @@ PORTB |=(1<<1);
 _delay_ms(1000);
 sram_init();//initialize sram
 char rx_char;
-sd_init();
+sd_init();  //initialize SD card
+init_tcnt2();//set up timer (RTC)
+init_twi(); //initialize TWI interface
+sei();
+init_MPU(MPU9250_FULL_SCALE_4G,MPU9250_GYRO_FULL_SCALE_500DPS); //initialize the 9axis sensor
 uint16_t i=0;//used for for loops
 //*****Fix me*******  
 //should set to int 0 not char '0' but the ascii zero prints better for now
 for(i=0;i<512;i++){sd_buf[i]='0';}//sets inital buffer to zero values
-sei();
+
+PORTB &=~(1<<2);
+_delay_ms(2000);
+PORTB |=(1<<2);
+PORTB &=~(1<<1);
+//char time_buf[10];
 while(1)
 {
+//while(count_t<20000){}
+//PORTB ^=(1<<1);
+uint16_t shots=record_shot();
+char shots_s[10];
+itoa(shots,shots_s,10);
+uart_puts("In 20 seconds The number of shots was: ");
+uart_puts(shots_s);
+uart_putc('\n');
+while(1){}
   //sd_write(1,sd_buf);
   //uart_puts("sd_write called....");
 //  uart_puts("\2 00001,04502,12403,04204,12005,13576,06507,65008,99909,13010,11111,\4");
@@ -279,7 +429,14 @@ while(1)
     while(rx_char!='c')
     {
       if(rx_char=='s'){sd_init();}
-      if(rx_char=='w'){sd_cmd(0x58,0,512,0xFF);}//sets write mode to 512
+     if(rx_char=='w')
+     {
+       
+       //for(arrayI=0;arrayI<0xFF;arrayI++)
+       //{
+       sd_cmd(0x10,0,512,CRC);  //sets block size
+       //}
+     }
       if(rx_char=='r'){sd_read(1);uart_puts(sd_buf);}//buffer gets set to sector!!
       if(rx_char=='i'){i2c_test();}
       rx_char=uart_getc();
