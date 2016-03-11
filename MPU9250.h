@@ -4,12 +4,20 @@
 
 #include <avr/pgmspace.h>
 
-void init_MPU(const uint8_t A_range, const uint8_t G_range);
-void writeReg(const uint8_t reg_addr, const uint8_t val);
-void readReg(const uint8_t reg_addr_strt, const uint8_t bytes, uint8_t *buf);
+void init_MPU(const uint8_t A_range, const uint8_t G_range, uint8_t SSel);
+void SPIinit_MPU(const uint8_t A_range, const uint8_t G_range);
+void writeReg(const uint8_t reg_addr, const uint8_t val, uint8_t SSel);
+void readReg(const uint8_t reg_addr, const uint8_t bytes, uint8_t *buf, uint8_t SSel);
+void SPIreadReg(const uint8_t reg_addr, uint8_t *buf);
+void SPIreadRegs(const uint8_t reg_addr, const uint8_t bytes, uint8_t *buf);
+void SPIwriteReg(const uint8_t reg_addr, const uint8_t val);
 void getMag(int16_t* mx, int16_t* my, int16_t* mz);
-void getGyro(int16_t* gx, int16_t* gy, int16_t* gz);
-void getAccel(int16_t* ax, int16_t* ay, int16_t* az);
+void getGyro(int16_t* gx, int16_t* gy, int16_t* gz, uint8_t SSel);
+void SPIgetGyro(int16_t* gx, int16_t* gy, int16_t* gz);
+void getAccel(int16_t* ax, int16_t* ay, int16_t* az, uint8_t SSel);
+void SPIgetAccel(int16_t* ax, int16_t* ay, int16_t* az);
+
+
 
 //MPU9250 Register map
 #define MPU9250_DEFAULT_ADDRESS         0xD1

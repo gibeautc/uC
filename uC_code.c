@@ -82,13 +82,15 @@ void spi_init()
 {
 //DDRB houses SPI pins SCK-5 MOSI-3 MISO-4 used for programing
 DDRB|=(1<<5)|(1<<3)|(0<<4)|(1<<2)|(1<<1);
-DDRD|=(1<<SD_cs);//sets chip select for SD
-PORTD |=(1<<SD_cs);//deselect 
+DDRD|=(1<<SD_cs)|(1<<sensor1_cs);//sets chip select for SD
+PORTD |=(1<<SD_cs)|(1<<sensor1_cs);//deselect 
 DDRC |=(1<<sram_cs);//Sets up chip select for sram 
 PORTC|=(1<<sram_cs);//deselect
 SPCR=0;
 SPCR=(1<<SPE)|(1<<MSTR)|(1<<SPR0);  //master mode sets 2x speed
-SPSR=(1<<SPI2X);
+//(1<<SPR0);
+//SPSR=(1<<SPI2X);
+SPSR=0;
 }//end spi_init()
 
 char SPI_send(char chr)
@@ -151,7 +153,7 @@ void sd_init()
   while(bit_is_clear(SPSR,SPIF)){}
   for(i=0;i<4;i++)
   {
-    SPDR=0x00;
+    SPDR=0x40;//*********CHANGE BACK TO ZERO*************
     while(bit_is_clear(SPSR,SPIF)){}
   }
   SPDR=0x95;
@@ -266,9 +268,9 @@ void add_inc()
 uint16_t record_shot()
 {
   uint16_t num_records=0;
-  int16_t ax,ay,az;
-  int16_t gx,gy,gz;
-  int16_t mx,my,mz;
+  int16_t ax=0,ay=0,az=0;
+  //int16_t gx,gy,gz;
+  //int16_t mx,my,mz;
   add_l=0;
   add_m=0;//reset addresses to zero
   add_h=0;
@@ -277,85 +279,62 @@ uint16_t record_shot()
   //each sensor is 14 bytes of data
   //each byte is roughtly 2.5 ms 
   uint16_t i=0;
-  uint8_t x=0;
-  uint8_t data_count=0;
+  int8_t x=0;
+  //uint8_t data_count=0;
   uint8_t data[20];
-  char addL[5];
-  char addM[5];
-  char addH[5];
+  char addL[10];
+  //char addM[5];
+  //char addH[5];
   count_t=0;
-  while(count_t<20000)//for full shot change back to 20000************
+  while(count_t<10000)//for full shot change back to 20000************
   {
-    //write time to SRAM
-    sram_write(add_l,add_m,add_h,(int8_t) (count_t>>8));
-    add_inc();
-    sram_write(add_l,add_m,add_h,(int8_t) count_t);
-    add_inc();
-    
-  for(x=0;x<3;x++)//each of three sensors
-  {
-    getAccel(&mx,&my,&mz);//fetch all axis compass readings
-    
-    data[0]=(int8_t)(ax>>8); 
+//    _delay_ms(1000);
+    getAccel(&ax,&ay,&az, MPU9250_DEFAULT_ADDRESS);//fetch all axis compass readings
+
+    //data[0]=(int8_t)(ax>>8); 
+    //data[1]=(int8_t)ax;
+    //data[2]=(int8_t)(ay>>8);
+    //data[3]=(int8_t)ay;
+    //data[4]=(int8_t)(az>>8);
+    //data[5]=(int8_t)az;
+    uart_puts("X-accel: ");
+    itoa(ax,addL,10);
+    uart_puts(addL);
+    uart_putc('\t');
+    uart_puts(" ");
+    uart_puts("Y-accel: ");
+    itoa(ay,addL,10);
+    uart_puts(addL);
+    uart_putc('\t');
+    uart_puts("Z-accel: ");
+    itoa(az,addL,10);
+    uart_puts(addL);
+    uart_putc('\n');
+  
+  
+    getAccel(&ax,&ay,&az, MPU9250_ALT_DEFAULT_ADDRESS);//fetch all axis compass readings
+/*    data[0]=(int8_t)(ax>>8); 
     data[1]=(int8_t)ax;
     data[2]=(int8_t)(ay>>8);
     data[3]=(int8_t)ay;
     data[4]=(int8_t)(az>>8);
-    data[5]=(int8_t)az;
-    while(twi_busy()){}
+    data[5]=(int8_t)az;*/
+    uart_puts("X2-accel: ");
+    itoa(ax,addL,10);
+    uart_puts(addL);
+    uart_putc('\t');
+    uart_puts("Y2-accel: ");
+    itoa(ay,addL,10);
+    uart_puts(addL);
+    uart_putc('\t');
+    uart_puts("Z2-accel: ");
+    itoa(az,addL,10);
+    uart_puts(addL);
+    uart_putc('\n');
+    uart_putc('\n');
 
-
-    getGyro(&gx,&gy,&gz);
-    while(twi_busy()){}
-    data[6]=(int8_t)(gx>>8); 
-    data[7]=(int8_t)gx;
-    data[8]=(int8_t)(gy>>8);
-    data[9]=(int8_t)gy;
-    data[10]=(int8_t)(gz>>8);
-    data[11]=(int8_t)gz;
-   
-
-    getMag(&mx,&my,&mz);
-    while(twi_busy()){}
-    data[12]=(int8_t)(mx>>8); 
-    data[14]=(int8_t)mx;
-    data[14]=(int8_t)(my>>8);
-    data[15]=(int8_t)my;
-    data[16]=(int8_t)(mz>>8);
-    data[17]=(int8_t)mz;
-    
-
-  for(i=0;i<18;i++);
-    sram_write(add_l,add_m,add_h,data[i]);
-    add_inc(); 
-    //getGyro(&mx,&my,&mz);
   } 
- /* 
-  itoa(mx,addL,10);
-  itoa(my,addM,10);
-  itoa(mz,addH,10);
-  uart_puts("X axis: ");
-  uart_puts(addL);
-  uart_puts("\nY axis: ");
-  uart_puts(addM);
-  uart_puts("\nZ axis: ");
-  uart_puts(addH);
-  uart_putc('\n');
-*/
-   num_records++;
-  }//end of time interval
-PORTB ^=(1<<1);//turn off light
-  itoa(add_l,addL,10);
-  itoa(add_m,addM,10);
-  itoa(add_h,addH,10);
-  uart_puts("Address Low: ");
-  uart_puts(addL);
-  uart_puts("\nAddress Mid: ");
-  uart_puts(addM);
-  uart_puts("\nAddress High: ");
-  uart_puts(addH);
-  uart_putc('\n');
-return num_records;
+//  PORTD|=(1<<sensor1_cs);
 }//end record_shot
 
 
@@ -384,13 +363,22 @@ PORTB &=~(1<<1);// blinks both lights to show the program is starting
 _delay_ms(200);
 PORTB |=(1<<1);
 _delay_ms(1000);
-sram_init();//initialize sram
+//sram_init();//initialize sram
 char rx_char;
-sd_init();  //initialize SD card
+//sd_init();  //initialize SD card
 init_tcnt2();//set up timer (RTC)
 init_twi(); //initialize TWI interface
 sei();
-init_MPU(MPU9250_FULL_SCALE_4G,MPU9250_GYRO_FULL_SCALE_500DPS); //initialize the 9axis sensor
+init_MPU(MPU9250_FULL_SCALE_4G,MPU9250_GYRO_FULL_SCALE_500DPS, MPU9250_ALT_DEFAULT_ADDRESS); //initialize the 9axis sensor
+init_MPU(MPU9250_FULL_SCALE_4G,MPU9250_GYRO_FULL_SCALE_500DPS, MPU9250_DEFAULT_ADDRESS); //initialize the 9axis sensor
+//while(twi_busy()){};
+PORTD &=~(1<<sensor1_cs);
+//uint8_t response[1];
+//SPIinit_MPU(MPU9250_FULL_SCALE_4G,MPU9250_GYRO_FULL_SCALE_500DPS); //initialize the 9axis sensor on SPI
+//SPIreadReg(0x75, response);
+
+PORTD |=(1<<sensor1_cs);
+
 uint16_t i=0;//used for for loops
 //*****Fix me*******  
 //should set to int 0 not char '0' but the ascii zero prints better for now
@@ -403,8 +391,6 @@ PORTB &=~(1<<1);
 //char time_buf[10];
 while(1)
 {
-//while(count_t<20000){}
-//PORTB ^=(1<<1);
 uint16_t shots=record_shot();
 char shots_s[10];
 itoa(shots,shots_s,10);
