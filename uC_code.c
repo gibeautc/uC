@@ -128,6 +128,12 @@ char sd_cmd(char cmd,uint16_t ArgH,uint16_t ArgL,char crc)
 }//end sd_write
 
 
+void sd_write()
+{
+
+}
+
+
 void sd_read(uint16_t sector)
 {
 
@@ -267,10 +273,11 @@ void add_inc()
  
 uint16_t record_shot()
 {
+  
   uint16_t num_records=0;
   int16_t ax=0,ay=0,az=0;
-  //int16_t gx,gy,gz;
-  //int16_t mx,my,mz;
+  int16_t gx,gy,gz;
+  int16_t mx,my,mz;
   add_l=0;
   add_m=0;//reset addresses to zero
   add_h=0;
@@ -286,7 +293,7 @@ uint16_t record_shot()
   //char addM[5];
   //char addH[5];
   count_t=0;
-  while(count_t<10000)//for full shot change back to 20000************
+  while(count_t<20000)//for full shot change back to 20000************
   {
 //    _delay_ms(1000);
     getAccel(&ax,&ay,&az, MPU9250_DEFAULT_ADDRESS);//fetch all axis compass readings
@@ -332,11 +339,31 @@ uint16_t record_shot()
     uart_puts(addL);
     uart_putc('\n');
     uart_putc('\n');
-
+    num_records++;
   } 
 //  PORTD|=(1<<sensor1_cs);
+return num_records;
 }//end record_shot
 
+
+void vibrate()
+{ //Vibrate for 100ms
+  
+}
+
+void init_AD()
+{
+
+}
+
+void check_voltage()
+{//Read System Voltage
+ //if below 3.8 halt and spin on blinking red light
+//if below 3.7 shutdown
+
+
+
+}
 
 ISR(TIMER2_OVF_vect)
 {
@@ -353,8 +380,18 @@ ISR(BADISR_vect)
 
 int main()
 {
+//************************( 1 )*******************************************************
 uart_init();//Keep this as first init so that text can be sent out in others
 spi_init(); //initialize SPI bus as master
+init_tcnt2();//set up timer (RTC)
+init_twi(); //initialize TWI interface
+sei();
+init_MPU(MPU9250_FULL_SCALE_4G,MPU9250_GYRO_FULL_SCALE_500DPS, MPU9250_ALT_DEFAULT_ADDRESS); //initialize the 9axis sensor
+init_MPU(MPU9250_FULL_SCALE_4G,MPU9250_GYRO_FULL_SCALE_500DPS, MPU9250_DEFAULT_ADDRESS); //initialize the 9axis sensor
+sd_init();  //initialize SD card
+sram_init();//initialize sram
+
+vibrate();	//Send feedback showing complete setup
 PORTB |=(1<<1)|(1<<2);
 PORTB &=~(1<<2);
 _delay_ms(200);
@@ -363,42 +400,38 @@ PORTB &=~(1<<1);// blinks both lights to show the program is starting
 _delay_ms(200);
 PORTB |=(1<<1);
 _delay_ms(1000);
-//sram_init();//initialize sram
+
+
 char rx_char;
-//sd_init();  //initialize SD card
-init_tcnt2();//set up timer (RTC)
-init_twi(); //initialize TWI interface
-sei();
-init_MPU(MPU9250_FULL_SCALE_4G,MPU9250_GYRO_FULL_SCALE_500DPS, MPU9250_ALT_DEFAULT_ADDRESS); //initialize the 9axis sensor
-init_MPU(MPU9250_FULL_SCALE_4G,MPU9250_GYRO_FULL_SCALE_500DPS, MPU9250_DEFAULT_ADDRESS); //initialize the 9axis sensor
-//while(twi_busy()){};
-PORTD &=~(1<<sensor1_cs);
-//uint8_t response[1];
-//SPIinit_MPU(MPU9250_FULL_SCALE_4G,MPU9250_GYRO_FULL_SCALE_500DPS); //initialize the 9axis sensor on SPI
-//SPIreadReg(0x75, response);
-
-PORTD |=(1<<sensor1_cs);
-
 uint16_t i=0;//used for for loops
 //*****Fix me*******  
 //should set to int 0 not char '0' but the ascii zero prints better for now
 for(i=0;i<512;i++){sd_buf[i]='0';}//sets inital buffer to zero values
 
-PORTB &=~(1<<2);
-_delay_ms(2000);
-PORTB |=(1<<2);
-PORTB &=~(1<<1);
-//char time_buf[10];
 while(1)
 {
-uint16_t shots=record_shot();
+//************************( 2 )*******************************************************
+
+PORTB &=~(1<<2);
+_delay_ms(2000);//Show red light for 2 sec, then turn green and start shot
+PORTB |=(1<<2);
+PORTB &=~(1<<1);
+//************************( 3 )*******************************************************
+uint16_t shots=record_shot();//record a shot
 char shots_s[10];
 itoa(shots,shots_s,10);
 uart_puts("In 20 seconds The number of shots was: ");
 uart_puts(shots_s);
 uart_putc('\n');
-while(1){}
-  //sd_write(1,sd_buf);
+PORTB |=(1<<1);//turn off light
+//************************( 4 )*******************************************************
+sd_write(1,sd_buf);//Write data to SD card
+//************************( 5 )*******************************************************
+check_voltage();//Check system voltage
+_delay_ms(10000);//wait 10 seconds 
+//************************( 6 )*******************************************************
+continue; //start over and take another shot
+
   //uart_puts("sd_write called....");
 //  uart_puts("\2 00001,04502,12403,04204,12005,13576,06507,65008,99909,13010,11111,\4");
 //  uart_puts("00001,00002,00003,00004,00005,\8\8\8\8,00007,00008,00009,00010,00011,\4");
