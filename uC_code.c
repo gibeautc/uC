@@ -424,6 +424,7 @@ uart_puts("In 20 seconds The number of shots was: ");
 uart_puts(shots_s);
 uart_putc('\n');
 PORTB |=(1<<1);//turn off light
+vibrate();_delay_ms(100);vibrate();  //Double vibration showing end of shot
 //************************( 4 )*******************************************************
 sd_write(1,sd_buf);//Write data to SD card
 //************************( 5 )*******************************************************
