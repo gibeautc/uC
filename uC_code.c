@@ -52,9 +52,21 @@ char sd_buf[512];
 volatile uint16_t delay=500;
 uint8_t sd_add[4];
 uint8_t arrayI=0;
-volatile uint16_t data_count=0;
+uint16_t data_count=0;
 volatile long int count_t=0;
+uint16_t num_records=0;
 
+
+void vibrate(const uint32_t vib_time)
+{ //Vibrate for 100ms
+  uint16_t vib_delay=0;
+  PORTD|=(1<<3);
+  for(vib_delay=0;vib_delay<vib_time;vib_delay++)
+  {
+    _delay_ms(1);
+  }
+  PORTD&=~(1<<3);  
+}
 
 
 void i2c_test()
@@ -230,7 +242,8 @@ uint8_t sram_read(uint8_t low,uint8_t mid, uint8_t high){
 
 //Will write byte to sram
 void sram_write(uint8_t low,uint8_t mid, uint8_t high,int8_t data){
-	data_count++;
+	//data_count++;
+        //uart_putc('.');
         PORTC &=~(1<<sram_cs);//select sram chip on SPI bus
         SPDR=sram_WRITE;//send write command
 	while(bit_is_clear(SPSR,SPIF)){}
@@ -257,29 +270,68 @@ void init_tcnt2()
 
 
 
-
 //records on shot in sram (20seconds) returns the number of records
 //need to add error checking on high byte of address (only 0 and 1)
 void add_inc()
 {
-  add_l++;
-  if(add_l>=255)
+  if(add_l==255 && add_m==255 && add_h==1){vibrate(1000);uart_puts("MEM OVERFLOW");while(1){}}
+  
+  if(add_l==255)
   {
     add_l=0;
-    add_m++;
-    if(add_m>=255)
+    if(add_m==255)
     {
       add_m=0;
       add_h=1;
     }
-  }
- 
+    else{add_m++;} 
+    
+  } 
+  else{add_l++;}
+
 }//end add_inc
+
+
+
+
+void mem_test()
+{
+ add_l=0;
+ add_m=0; //reset sram addresses
+ add_h=0;
+ char print[10];
+ uint32_t mem=0;
+ for(mem=0;mem<140000;mem++)
+ {
+  if(mem>240 && mem<300)
+  {
+     itoa(add_l,print,10);
+     uart_puts(print);
+     uart_puts("   ");
+     itoa(add_m,print,10);
+     uart_puts(print);
+     uart_puts("   ");
+     itoa(add_h,print,10);
+     uart_puts(print);
+     uart_putc('\n');
+     uart_putc('\n');
+     _delay_ms(1000);
+   } 
+  add_inc();
+
+  if(mem%100==0)
+  {
+  itoa(mem,print,10);
+  uart_puts(print);
+  uart_putc('\n');
+  }//end if
+ }//end for loop
+while(1){}
+}//end mem_test
  
-uint16_t record_shot()
+void record_shot()
 {
   
-  uint16_t num_records=0;
   int16_t ax=0,ay=0,az=0;
  // int16_t gx,gy,gz;
  // int16_t mx,my,mz;
@@ -292,59 +344,47 @@ uint16_t record_shot()
   //get 20 seconds of data
   //each sensor is 14 bytes of data
   //each byte is roughtly 2.5 ms 
-  uint16_t i=0;
+  //uint16_t i=0;
   //int16_t x=0;
   uint8_t data[50];
-  //char addL[10];
+  char addL[10];
   //char addM[5];
   //char addH[5];
   count_t=0;
-  while(count_t<5000)//for full shot change back to 20000************
+  num_records=0;
+  while(count_t<500000)//for full shot change back to 20000************
   {
-    //uart_putc('R');
-    
-
-
+    num_records++;
+    _delay_us(750000);
+    //_delay_us(1000000); 
     sram_write(add_l,add_m,add_h,(uint8_t)(count_t>>8));
     add_inc();
+    data_count++;
     sram_write(add_l,add_m,add_h,(uint8_t)(count_t));
-    add_inc();    
+    add_inc();   
+    data_count++; 
 
-    getAccel(&ax,&ay,&az, MPU9250_DEFAULT_ADDRESS);//fetch all axis compass readings
+    getAccel(&ax,&ay,&az, MPU9250_ALT_DEFAULT_ADDRESS);//fetch all axis compass readings
     data[0]=(int8_t)(ax>>8); 
     data[1]=(int8_t)ax;
     data[2]=(int8_t)(ay>>8);
     data[3]=(int8_t)ay;
     data[4]=(int8_t)(az>>8);
     data[5]=(int8_t)az;
-/*
-    uart_puts("X-accel: ");
+ /*   
+    uart_puts("\nX- ");
     itoa(ax,addL,10);
     uart_puts(addL);
-    uart_putc('\t');
-    uart_puts(" ");
-    uart_puts("Y-accel: ");
+    uart_puts("\tY- ");
     itoa(ay,addL,10);
     uart_puts(addL);
-    uart_putc('\t');
-    uart_puts("Z-accel: ");
+    uart_puts("\tZ- ");
     itoa(az,addL,10);
     uart_puts(addL);
-    uart_putc('\n');
-  */    
+   */ 
 
-    //getAccel(&ax,&ay,&az, MPU9250_ALT_DEFAULT_ADDRESS);//fetch all axis compass readings
-  
-/*
-    data[7]=(int8_t)(ax>>8); 
-    data[8]=(int8_t)ax;
-    data[9]=(int8_t)(ay>>8);
-    data[10]=(int8_t)ay;
-    data[11]=(int8_t)(az>>8);
-    data[12]=(int8_t)az;
-*/  
 
-  getGyro(&ax,&ay,&az, MPU9250_DEFAULT_ADDRESS);//fetch all axis compass readings
+    getGyro(&ax,&ay,&az, MPU9250_ALT_DEFAULT_ADDRESS);//fetch all axis compass readings
   
     data[6]=(int8_t)(ax>>8); 
     data[7]=(int8_t)ax;
@@ -353,56 +393,52 @@ uint16_t record_shot()
     data[10]=(int8_t)(az>>8);
     data[11]=(int8_t)az;  
 
-  //getGyro(&ax,&ay,&az, MPU9250_ALT_DEFAULT_ADDRESS);//fetch all axis compass readings
-  
 
-/*
-    data[19]=(int8_t)(ax>>8); 
-    data[20]=(int8_t)ax;
-    data[21]=(int8_t)(ay>>8);
-    data[22]=(int8_t)ay;
-    data[23]=(int8_t)(az>>8);
-    data[24]=(int8_t)az;
-*/  
+    getAccel(&ax,&ay,&az, MPU9250_DEFAULT_ADDRESS);//fetch all axis compass readings
+    data[12]=(int8_t)(ax>>8); 
+    data[13]=(int8_t)ax;
+    data[14]=(int8_t)(ay>>8);
+    data[15]=(int8_t)ay;
+    data[16]=(int8_t)(az>>8);
+    data[17]=(int8_t)az;
+    
 
-
-    for(i=0;i<12;i++)
-    {
-     //uart_putc('W');
-     //for(x=0;x<100;x++){}
-     sram_write(add_l,add_m,add_h,data[i]);
-     add_inc(); 
-    }
-
-
-/*
-    uart_puts("X2-accel: ");
+    uart_puts("\nX2- ");
     itoa(ax,addL,10);
     uart_puts(addL);
-    uart_putc('\t');
-    uart_puts("Y2-accel: ");
+    uart_puts("    Y2- ");
     itoa(ay,addL,10);
     uart_puts(addL);
-    uart_putc('\t');
-    uart_puts("Z2-accel: ");
+    uart_puts("    Z2- ");
     itoa(az,addL,10);
     uart_puts(addL);
-    uart_putc('\n');
-    uart_putc('\n');
-*/
-    num_records++;
-    //if(num_records>20000){uart_putc('O');}
+
+    getGyro(&ax,&ay,&az, MPU9250_DEFAULT_ADDRESS);//fetch all axis compass readings
+  
+    data[18]=(int8_t)(ax>>8); 
+    data[19]=(int8_t)ax;
+    data[20]=(int8_t)(ay>>8);
+    data[21]=(int8_t)ay;
+    data[22]=(int8_t)(az>>8);
+    data[23]=(int8_t)az;  
+    uint8_t _i;
+    for(_i=0;_i<24;_i++)
+    {
+     sram_write(add_l,add_m,add_h,data[_i]);
+     add_inc(); 
+     data_count++;
+    }
+
   }//end timing while loop 
-//  PORTD|=(1<<sensor1_cs);
-return num_records;
 }//end record_shot
 
+void ADC_init()
+{
+//ADCSRB|=(1<<ACME);
+//ADMUX=0;
+//ADCSRA|=(1<<ADEN)|(1<<ADSC)|(0<<ADFR);
 
-void vibrate()
-{ //Vibrate for 100ms
-  PORTD|=(1<<3);
-  _delay_ms(100);
-  PORTD&=~(1<<3);  
+
 }
 
 void print_shot()
@@ -410,7 +446,7 @@ void print_shot()
   char print[20];
 
   uart_puts("Number of Bytes: ");
-  ltoa(data_count,print,10);
+  itoa(data_count,print,10);
   uart_puts(print);
   uart_putc('\n');
   _delay_ms(5000);  
@@ -420,7 +456,7 @@ void print_shot()
   uint16_t x;
   for(x=0;x<data_count;x++)
   {
-    ltoa(sram_read(add_l,add_m,add_h),print,10);
+    itoa(sram_read(add_l,add_m,add_h),print,10);
     add_inc();
     uart_puts(print);
     uart_putc('\n');
@@ -466,12 +502,12 @@ spi_init(); //initialize SPI bus as master
 init_tcnt2();//set up timer (RTC)
 init_twi(); //initialize TWI interface
 sei();
-//init_MPU(MPU9250_FULL_SCALE_4G,MPU9250_GYRO_FULL_SCALE_500DPS, MPU9250_ALT_DEFAULT_ADDRESS); //initialize the 9axis sensor
+init_MPU(MPU9250_FULL_SCALE_4G,MPU9250_GYRO_FULL_SCALE_500DPS, MPU9250_ALT_DEFAULT_ADDRESS); //initialize the 9axis sensor
 init_MPU(MPU9250_FULL_SCALE_4G,MPU9250_GYRO_FULL_SCALE_500DPS, MPU9250_DEFAULT_ADDRESS); //initialize the 9axis sensor
 sd_init();  //initialize SD card
 sram_init();//initialize sram
 
-vibrate();	//Send feedback showing complete setup
+vibrate(100);	//Send feedback showing complete setup
 PORTB |=(1<<1)|(1<<2);
 PORTB &=~(1<<2);
 _delay_ms(200);
@@ -497,10 +533,11 @@ _delay_ms(2000);//Show red light for 2 sec, then turn green and start shot
 PORTB |=(1<<2);
 PORTB &=~(1<<1);
 //************************( 3 )*******************************************************
-vibrate();
-uint16_t shots=record_shot();//record a shot
+vibrate(100);
+
+record_shot();//record a shot
 char shots_s[10];
-ltoa(shots,shots_s,10);
+itoa(num_records,shots_s,10);
 uart_puts("In 20 seconds The number of shots was: ");
 uart_puts(shots_s);
 uart_putc('\n');
@@ -508,7 +545,7 @@ uart_putc('\n');
 print_shot();
 
 PORTB |=(1<<1);//turn off light
-vibrate();_delay_ms(100);vibrate();  //Double vibration showing end of shot
+vibrate(100);_delay_ms(100);vibrate(100);  //Double vibration showing end of shot
 //************************( 4 )*******************************************************
 sd_write(1,sd_buf);//Write data to SD card
 //************************( 5 )*******************************************************

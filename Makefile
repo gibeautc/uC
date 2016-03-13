@@ -3,11 +3,13 @@ PRG            =uC_code
 OBJ            = $(PRG).o uart_functions.o twi_master.o MPU9250.o 
 
 MCU_TARGET     = atmega328p
-OPTIMIZE       = -O3    # options are 1, 2, 3, s
+
+PTIMIZE       = -O1    # options are 1, 2, 3, s
 CC             = avr-gcc
 F_CPU          = 8000000UL
 
 override CFLAGS        = -g -Wall $(OPTIMIZE) -mmcu=$(MCU_TARGET) $(DEFS)
+#override CFLAGS        = -g -Wall -mmcu=$(MCU_TARGET) $(DEFS)
 override LDFLAGS       = -Wl,-Map,$(PRG).map
 
 OBJCOPY        = avr-objcopy
