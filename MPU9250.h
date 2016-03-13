@@ -346,4 +346,20 @@ void SPIgetAccel(int16_t* ax, int16_t* ay, int16_t* az);
 //Magnetometer register masks
 #define MPU9250_WIA_MASK 0x48
 
+
+/* ---- Sensitivity --------------------------------------------------------- */
+ 
+#define MPU9250A_2g_scale       ((float)0.000061035156f) // 0.000061035156 g/LSB
+#define MPU9250A_4g_scale       ((float)0.000122070312f) // 0.000122070312 g/LSB
+#define MPU9250A_8g_scale       ((float)0.000244140625f) // 0.000244140625 g/LSB
+#define MPU9250A_16g_scale      ((float)0.000488281250f) // 0.000488281250 g/LSB
+ 
+#define MPU9250G_250dps_scale   ((float)0.007633587786f) // 0.007633587786 dps/LSB
+#define MPU9250G_500dps_scale   ((float)0.015267175572f) // 0.015267175572 dps/LSB
+#define MPU9250G_1000dps_scale  ((float)0.030487804878f) // 0.030487804878 dps/LSB
+#define MPU9250G_2000dps_scale  ((float)0.060975609756f) // 0.060975609756 dps/LSB
+ 
+#define MPU9250M_4800uT   ((float)0.6f)            // 0.6 uT/LSB
+#define Magnetometer_Sensitivity_Scale_Factor ((float)0.15f) 
+
 #endif /* _MPU9250_H_ */
