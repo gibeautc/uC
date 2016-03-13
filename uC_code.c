@@ -190,7 +190,7 @@ void sd_init()
     while(bit_is_clear(SPSR,SPIF)){}
     input=SPDR;
     if(input==0x01){uart_puts("SD-Card Init: PASSED\n");break;}
-    if(i==100){uart_puts("SD-Card Init: FAILED\n");break;}
+    //if(i==100){uart_puts("SD-Card Init: FAILED\n");break;}
   }
  // uart_puts("Bits are set:");
   //for(i=0;i<8;i++)
@@ -352,10 +352,10 @@ void record_shot()
   //char addH[5];
   count_t=0;
   num_records=0;
-  while(count_t<500000)//for full shot change back to 20000************
+  while(count_t<5000)//for full shot change back to 20000************
   {
     num_records++;
-    _delay_us(750000);
+    _delay_us(6000);
     //_delay_us(1000000); 
     sram_write(add_l,add_m,add_h,(uint8_t)(count_t>>8));
     add_inc();
@@ -364,7 +364,7 @@ void record_shot()
     add_inc();   
     data_count++; 
 
-    getAccel(&ax,&ay,&az, MPU9250_ALT_DEFAULT_ADDRESS);//fetch all axis compass readings
+   // getAccel(&ax,&ay,&az, MPU9250_ALT_DEFAULT_ADDRESS);//fetch all axis compass readings
     data[0]=(int8_t)(ax>>8); 
     data[1]=(int8_t)ax;
     data[2]=(int8_t)(ay>>8);
@@ -384,7 +384,7 @@ void record_shot()
    */ 
 
 
-    getGyro(&ax,&ay,&az, MPU9250_ALT_DEFAULT_ADDRESS);//fetch all axis compass readings
+ //   getGyro(&ax,&ay,&az, MPU9250_ALT_DEFAULT_ADDRESS);//fetch all axis compass readings
   
     data[6]=(int8_t)(ax>>8); 
     data[7]=(int8_t)ax;
@@ -394,7 +394,7 @@ void record_shot()
     data[11]=(int8_t)az;  
 
 
-    getAccel(&ax,&ay,&az, MPU9250_DEFAULT_ADDRESS);//fetch all axis compass readings
+   // getAccel(&ax,&ay,&az, MPU9250_DEFAULT_ADDRESS);//fetch all axis compass readings
     data[12]=(int8_t)(ax>>8); 
     data[13]=(int8_t)ax;
     data[14]=(int8_t)(ay>>8);
@@ -402,7 +402,7 @@ void record_shot()
     data[16]=(int8_t)(az>>8);
     data[17]=(int8_t)az;
     
-
+/*
     uart_puts("\nX2- ");
     itoa(ax,addL,10);
     uart_puts(addL);
@@ -412,8 +412,8 @@ void record_shot()
     uart_puts("    Z2- ");
     itoa(az,addL,10);
     uart_puts(addL);
-
-    getGyro(&ax,&ay,&az, MPU9250_DEFAULT_ADDRESS);//fetch all axis compass readings
+*/
+   // getGyro(&ax,&ay,&az, MPU9250_DEFAULT_ADDRESS);//fetch all axis compass readings
   
     data[18]=(int8_t)(ax>>8); 
     data[19]=(int8_t)ax;
@@ -421,8 +421,8 @@ void record_shot()
     data[21]=(int8_t)ay;
     data[22]=(int8_t)(az>>8);
     data[23]=(int8_t)az;  
-    uint8_t _i;
-    for(_i=0;_i<24;_i++)
+    uint8_t _i;   
+ for(_i=0;_i<24;_i++)
     {
      sram_write(add_l,add_m,add_h,data[_i]);
      add_inc(); 
@@ -492,20 +492,24 @@ ISR(BADISR_vect)
 
 int main()
 {
+
+uint8_t test_result=0;
 //************************( 1 )*******************************************************
 DDRD|=(1<<3);//set vibration pin as output
 PORTD&=~(1<<3);//vibration off
 
 
 uart_init();//Keep this as first init so that text can be sent out in others
-spi_init(); //initialize SPI bus as master
+uart_puts("Starting up....");
+
+//spi_init(); //initialize SPI bus as master
 init_tcnt2();//set up timer (RTC)
-init_twi(); //initialize TWI interface
+//init_twi(); //initialize TWI interface
 sei();
-init_MPU(MPU9250_FULL_SCALE_4G,MPU9250_GYRO_FULL_SCALE_500DPS, MPU9250_ALT_DEFAULT_ADDRESS); //initialize the 9axis sensor
-init_MPU(MPU9250_FULL_SCALE_4G,MPU9250_GYRO_FULL_SCALE_500DPS, MPU9250_DEFAULT_ADDRESS); //initialize the 9axis sensor
-sd_init();  //initialize SD card
-sram_init();//initialize sram
+//init_MPU(MPU9250_FULL_SCALE_4G,MPU9250_GYRO_FULL_SCALE_500DPS, MPU9250_ALT_DEFAULT_ADDRESS); //initialize the 9axis sensor
+//init_MPU(MPU9250_FULL_SCALE_4G,MPU9250_GYRO_FULL_SCALE_500DPS, MPU9250_DEFAULT_ADDRESS); //initialize the 9axis sensor
+//sd_init();  //initialize SD card
+//sram_init();//initialize sram
 
 vibrate(100);	//Send feedback showing complete setup
 PORTB |=(1<<1)|(1<<2);
@@ -517,13 +521,21 @@ _delay_ms(200);
 PORTB |=(1<<1);
 _delay_ms(1000);
 
-
+/*
+test_result = test_com(0, MPU9250_DEFAULT_ADDRESS);
+if(test_result)
+{
+uart_puts("MPU Status: OK\n");
+}
+else
+uart_puts("MPU Status: FAILURE... You suck!\n");
+*/
 char rx_char;
 uint16_t i=0;//used for for loops
 //*****Fix me*******  
 //should set to int 0 not char '0' but the ascii zero prints better for now
 for(i=0;i<512;i++){sd_buf[i]='0';}//sets inital buffer to zero values
-
+uint16_t shot_count=0;
 while(1)
 {
 //************************( 2 )*******************************************************
@@ -538,11 +550,16 @@ vibrate(100);
 record_shot();//record a shot
 char shots_s[10];
 itoa(num_records,shots_s,10);
-uart_puts("In 20 seconds The number of shots was: ");
+uart_puts("In 20 seconds The number of records was: ");
 uart_puts(shots_s);
 uart_putc('\n');
 
-print_shot();
+//print_shot();
+shot_count++;
+itoa(shot_count,shots_s,10);
+uart_puts("Shot Number: ");
+uart_puts(shots_s);
+uart_putc('\n');
 
 PORTB |=(1<<1);//turn off light
 vibrate(100);_delay_ms(100);vibrate(100);  //Double vibration showing end of shot
@@ -550,7 +567,7 @@ vibrate(100);_delay_ms(100);vibrate(100);  //Double vibration showing end of sho
 sd_write(1,sd_buf);//Write data to SD card
 //************************( 5 )*******************************************************
 check_voltage();//Check system voltage
-_delay_ms(10000);//wait 10 seconds 
+_delay_ms(60000);//wait 60 seconds
 //************************( 6 )*******************************************************
 continue; //start over and take another shot
 

@@ -16,6 +16,8 @@ void getGyro(int16_t* gx, int16_t* gy, int16_t* gz, uint8_t SSel);
 void SPIgetGyro(int16_t* gx, int16_t* gy, int16_t* gz);
 void getAccel(int16_t* ax, int16_t* ay, int16_t* az, uint8_t SSel);
 void SPIgetAccel(int16_t* ax, int16_t* ay, int16_t* az);
+uint8_t test_com(uint8_t SPI_Enable, const uint8_t SSel);
+void selfTest(float* differences, uint8_t SSel);
 
 
 

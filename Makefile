@@ -4,7 +4,7 @@ OBJ            = $(PRG).o uart_functions.o twi_master.o MPU9250.o
 
 MCU_TARGET     = atmega328p
 
-PTIMIZE       = -O1    # options are 1, 2, 3, s
+OPTIMIZE       = -O1    # options are 1, 2, 3, s
 CC             = avr-gcc
 F_CPU          = 8000000UL
 

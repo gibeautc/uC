@@ -43,17 +43,17 @@ enum Mscale {
 };
 
 uint8_t test_com(uint8_t SPI_Enable, const uint8_t SSel){
-	uint8_t response[1];
+        uint8_t response[1];
 	switch (SPI_Enable)
 	{
-	case SPI_Dis:
+	case 0:
 		readReg(0x75 , 1 , response, SSel);
 		if(response[0] == 0x71)
 			return 1;
 		else
 			return 0;	
 	break;
-	case SPI_En:
+	default:
 		SPIreadRegs(0x75 , 1 , response);	
 			if(response[0] == 0x71)
 			return 1;
