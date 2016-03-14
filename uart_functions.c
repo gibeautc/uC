@@ -1,16 +1,22 @@
-//UART Functions used for writing to a bluetooth module
+//:UART Functions used for writing to a bluetooth module
 
 
 
-#define F_CPU 8000000UL
+#define F_CPU 8100000UL
 #include <avr/io.h>
 #include <stdlib.h>
 #include <avr/pgmspace.h>
+#include <util/delay.h>
 
+//#define USART_BAUDRATE 19200
 
-#define USART_BAUDRATE 9600  
+#define USART_BAUDRATE 460800
 //Compute baudvalue at compile time from USART_BAUDRATE and F_CPU
 #define BAUDVALUE  ((F_CPU/(USART_BAUDRATE * 16UL)) - 1 )
+
+//#define USART_BAUDRATE2 38400
+//#define BAUDVALUE2  ((F_CPU/(USART_BAUDRATE * 16UL)) - 1 )
+ 
 
 #include <string.h>
 
@@ -72,9 +78,27 @@ void uart_init(){
 
 //  UCSR0B |= (1<<RXEN0) | (1<<TXEN0) ;
 //async operation, no parity,  one stop bit, 8-bit characters
+UCSR0A |=(1<<U2X0);
 UCSR0C |= (1<<UCSZ01) | (1<<UCSZ00);
-UBRR0H = (BAUDVALUE >>8 ); //load upper byte of the baud rate into UBRR 
-UBRR0L =  BAUDVALUE;       //load lower byte of the baud rate into UBRR 
+//UBRR0H = (BAUDVALUE >>8 ); //load upper byte of the baud rate into UBRR 
+//UBRR0L =  BAUDVALUE;       //load lower byte of the baud rate into UBRR 
+//_delay_ms(1000);
+//char num[5];
+//uint8_t x;
+//for(x=0;x<25;x++)
+//{
+UBRR0H = 0; //load upper byte of the baud rate into UBRR 
+UBRR0L = 25;       //load lower byte of the baud rate into UBRR 
+//_delay_ms(100);
+//uart_puts("Got it: ");
+//itoa(x,num,10);
+//uart_puts(num);
+//}
+//uart_puts("AT+UART=38400,0,0");
+//_delay_ms(100);
+//if(uart_gets()
+//UBRR0H = (BAUDVALUE2 >>8 ); //load upper byte of the baud rate into UBRR 
+//UBRR0L =  BAUDVALUE2;       //load lower byte of the baud rate into UBRR 
 
 }
 //******************************************************************
