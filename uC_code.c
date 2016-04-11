@@ -98,7 +98,7 @@ void spi_init()
 {
 //DDRB houses SPI pins SCK-5 MOSI-3 MISO-4 used for programing
 DDRB|=(1<<5)|(1<<3)|(0<<4)|(1<<2)|(1<<1);
-DDRD|=(1<<SD_cs)|(1<<sensor1_cs);//sets chip select for SD
+//DDRD|=(1<<SD_cs)|(1<<sensor1_cs);//sets chip select for SD
 PORTD |=(1<<SD_cs)|(1<<sensor1_cs);//deselect 
 DDRC |=(1<<sram_cs);//Sets up chip select for sram 
 PORTC|=(1<<sram_cs);//deselect
@@ -388,7 +388,7 @@ void record_shot()
     uart_puts(addL);
   */  
 
-
+/*
     getGyro(&ax,&ay,&az, MPU9250_ALT_DEFAULT_ADDRESS);//fetch all axis compass readings
     data[6]=(int8_t)(ax>>8); 
     data[7]=(int8_t)ax;
@@ -404,7 +404,7 @@ void record_shot()
     data[15]=(int8_t)ay;
     data[16]=(int8_t)(az>>8);
     data[17]=(int8_t)az;
-
+*/
 /*
     uart_puts("\nX2- ");
     itoa(ax,addL,10);
