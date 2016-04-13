@@ -1,22 +1,26 @@
+
 //:UART Functions used for writing to a bluetooth module
 
 
 
+
+//UART Functions 
+//Roger Traylor 11.l6.11
+//For controlling the UART and sending debug data to a terminal
+//as an aid in debugging.
 #define F_CPU 8000000UL
 #include <avr/io.h>
 #include <stdlib.h>
 #include <avr/pgmspace.h>
 #include <util/delay.h>
 
-#define USART_BAUDRATE 9600
+#define USART_BAUDRATE 38400
 
 //#define USART_BAUDRATE 460800
+
+//#define USART_BAUDRATE 9600 
 //Compute baudvalue at compile time from USART_BAUDRATE and F_CPU
 #define BAUDVALUE  ((F_CPU/(USART_BAUDRATE * 16UL)) - 1 )
-
-//#define USART_BAUDRATE2 38400
-//#define BAUDVALUE2  ((F_CPU/(USART_BAUDRATE * 16UL)) - 1 )
- 
 
 #include <string.h>
 
@@ -37,9 +41,6 @@ void uart_putc(char data) {
 
 //******************************************************************
 //                        uart_puts
-
-
-//********also sends ' /r' after every string
 // Takes a string and sends each charater to be sent to USART0
 //void uart_puts(unsigned char *str) {
 void uart_puts(char *str) {
@@ -48,7 +49,7 @@ void uart_puts(char *str) {
         uart_putc(str[i]);
         i++;
     }
-   //uart_putc('\r');
+  uart_putc('\n');
 }
 //******************************************************************
 
@@ -78,7 +79,6 @@ void uart_init(){
 
 //  UCSR0B |= (1<<RXEN0) | (1<<TXEN0) ;
 //async operation, no parity,  one stop bit, 8-bit characters
-UCSR0A |=(1<<U2X0);
 UCSR0C |= (1<<UCSZ01) | (1<<UCSZ00);
 UBRR0H = (BAUDVALUE >>8 ); //load upper byte of the baud rate into UBRR 
 UBRR0L =  BAUDVALUE;       //load lower byte of the baud rate into UBRR 
@@ -99,6 +99,7 @@ UBRR0L =  BAUDVALUE;       //load lower byte of the baud rate into UBRR
 //if(uart_gets()
 //UBRR0H = (BAUDVALUE2 >>8 ); //load upper byte of the baud rate into UBRR 
 //UBRR0L =  BAUDVALUE2;       //load lower byte of the baud rate into UBRR 
+
 
 }
 //******************************************************************
