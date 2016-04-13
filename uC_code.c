@@ -11,7 +11,7 @@
 //#include "sdcard.h"
 //Define the chip select bits for 1  sensor, sram, SD
 //also define the two sensor addresses for the I2C bus
-//all bits are on PORTD
+//all bits are on PORTB
 #define sensor1_cs 2
 #define sensor2_add 0x00 
 #define sensor3_add 0x00
@@ -505,13 +505,19 @@ int main()
 
 //uint8_t test_result=0;
 //************************( 1 )*******************************************************
-DDRD|=(1<<3);//set vibration pin as output
-PORTD&=~(1<<3);//vibration off
-
-
+DDRD|=(1<<6)|(1<<7);//set LED pins as output
+//PORTD&=~(1<<3);//vibration off
 uart_init();//Keep this as first init so that text can be sent out in others
-uart_puts("Starting up....");
 
+while(1)
+{
+uart_puts("Starting up....");
+_delay_ms(500);
+PORTD|=1<<6;
+_delay_ms(500);
+PORTD&=~(1<<6);
+
+}
 spi_init(); //initialize SPI bus as master
 init_tcnt2();//set up timer (RTC)
 init_twi(); //initialize TWI interface
@@ -523,14 +529,14 @@ init_MPU(MPU9250_FULL_SCALE_4G,MPU9250_GYRO_FULL_SCALE_500DPS, MPU9250_DEFAULT_A
 sd_init();  //initialize SD card
 sram_init();//initialize sram
 //uart_puts("Post Init...");
-vibrate(100);	//Send feedback showing complete setup
-PORTB |=(1<<1)|(1<<2);
-PORTB &=~(1<<2);
+//vibrate(100);	//Send feedback showing complete setup
+PORTD |=(1<<6)|(1<<7);
+PORTD &=~(1<<7);
 _delay_ms(200);
-PORTB |=(1<<2);
-PORTB &=~(1<<1);// blinks both lights to show the program is starting
+PORTD |=(1<<7);
+PORTD &=~(1<<6);// blinks both lights to show the program is starting
 _delay_ms(200);
-PORTB |=(1<<1);
+PORTD |=(1<<6);
 _delay_ms(1000);
 
 /*
@@ -552,12 +558,12 @@ while(1)
 {
 //************************( 2 )*******************************************************
 
-PORTB &=~(1<<2);
+PORTD &=~(1<<7);
 _delay_ms(2000);//Show red light for 2 sec, then turn green and start shot
-PORTB |=(1<<2);
-PORTB &=~(1<<1);
+PORTD |=(1<<7);
+PORTD &=~(1<<6);
 //************************( 3 )*******************************************************
-vibrate(100);
+//vibrate(100);
 
 record_shot();//record a shot
 char shots_s[10];
@@ -575,12 +581,12 @@ uart_putc('\n');
 //print_shot();
 
 
-PORTB |=(1<<1);//turn off light
-vibrate(100);_delay_ms(100);vibrate(100);  //Double vibration showing end of shot
+PORTD |=(1<<6);//turn off light
+//vibrate(100);_delay_ms(100);vibrate(100);  //Double vibration showing end of shot
 //************************( 4 )*******************************************************
 sd_write(1,sd_buf);//Write data to SD card
 //************************( 5 )*******************************************************
-check_voltage();//Check system voltage
+//check_voltage();//Check system voltage
 _delay_ms(5000);//wait 60 seconds
 //************************( 6 )*******************************************************
 continue; //start over and take another shot
