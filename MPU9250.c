@@ -316,8 +316,9 @@ void init_MPU(const uint8_t A_range, const uint8_t G_range, uint8_t SSel){
 	writeReg(MPU9250_ACCEL_CONFIG2, 0x06, SSel); //Low pass 5Hz Accel 66.96ms Delay
 	//Configure Magnetometer:
 	//writeReg(MPU9250_INT_PIN_CFG, 0x02);
-	writeMagReg(MPU9250_MAG_CNTL2, 0x01);
-	writeMagReg(MPU9250_MAG_CNTL1, 0x12); //Old Initilization
+	//writeMagReg(MPU9250_MAG_CNTL2, 0x00);//Changed from 01
+	//writeMagReg(MPU9250_MAG_CNTL1, 0x00);//Changed from 12
+ //Old Initilization
 	return;
 }
 

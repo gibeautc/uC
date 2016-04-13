@@ -5,17 +5,12 @@
 #include <util/delay.h>
 #include <avr/interrupt.h>
 #include "uart_functions.h"
-#include "i2c_master.h"
 #include "MPU9250.h"
 #include "twi_master.h"
-//#include "sdcard.h"
 //Define the chip select bits for 1  sensor, sram, SD
 //also define the two sensor addresses for the I2C bus
 //all bits are on PORTB
 #define sensor1_cs 2
-#define sensor2_add 0x00 
-#define sensor3_add 0x00
-#define SD_cs 6
 //sram cs will be in port c
 #define sram_cs 0
 
@@ -24,27 +19,7 @@
 #define sram_WRITE 0x02
 #define sram_RDMR 0x05
 #define sram_WRMR 0x01 
-#define CMD0 0x00  //go idle cond   init card in spi mode if CS low
-#define CMD8 0x08  //send if cond   verify SD card interface operations condition
-#define CMD9 0x09  //read card specific data
-#define CMD10 0x0A //read card ID info
-#define CMD13 0x0D //read card statsus register
-#define CMD17 0x11 //read a single block from the card
-#define CMD24 0x18 //write a single data blcok to card
-#define CMD25 0x19 //write multiple blocks
-#define CMD32 0x20 //sets the address of first blcok to be erased
-#define CMD33 0x21 //sets the address of the last block to be erased
-#define CMD38 0x26 //erase previously selected blocks
-#define CMD55 0x37 // 
-#define CMD58 0x3A
-#define ACMD23 0x17
-#define ACMD41 0x29
-#define CRC   35   //this is the CRC char with a 1 shifted in for SD Card 
 
-
-#define r1_ready_state 0x00
-#define r1_idle_state 0x01
-#define r1_illegal_command 0x04
 uint8_t add_l=0;//Address pointers for the SRAM
 uint8_t add_m=0;//Address pointers
 uint8_t add_h=0;// only zero are used, any other bits are ignored
@@ -69,29 +44,6 @@ void vibrate(const uint32_t vib_time)
 }
 
 
-void i2c_test()
-{
-  //i2c_init();
-  //uint8_t data[5]={1,2,3,4,5};
-  //uint8_t x=0;
-  uart_puts("Starting I2C test\n\n");
-  DDRC|=(1<<5);
-
-  PORTC&=~(1<<5);
-  _delay_ms(1000);
-  PORTC|=(1<<5);
-  //i2c_start(100);
-  //for(x=0;x<100;x++)
-  //{
-   // uart_putc('.'); 
-    //i2c_write(x);
-    //_delay_ms(100);
-    //while(twi_busy()){}
-  //}
-  //i2c_stop();
-  uart_puts("\nI2C Test complete\n");
-}
-
 
 //SPI init will set up SPI 
 void spi_init()
@@ -99,7 +51,7 @@ void spi_init()
 //DDRB houses SPI pins SCK-5 MOSI-3 MISO-4 used for programing
 DDRB|=(1<<5)|(1<<3)|(0<<4)|(1<<2)|(1<<1);
 //DDRD|=(1<<SD_cs)|(1<<sensor1_cs);//sets chip select for SD
-PORTD |=(1<<SD_cs)|(1<<sensor1_cs);//deselect 
+PORTD |=(1<<sensor1_cs);//deselect 
 DDRC |=(1<<sram_cs);//Sets up chip select for sram 
 PORTC|=(1<<sram_cs);//deselect
 SPCR=0;
@@ -116,90 +68,7 @@ char SPI_send(char chr)
   while(bit_is_clear(SPSR,SPIF)){}
   receivedchar=SPDR;
   return (receivedchar);
-
-}
-
-
-char sd_cmd(char cmd,uint16_t ArgH,uint16_t ArgL,char crc)
-{
-  SPCR=0;
-  SPCR=(1<<SPE)|(1<<MSTR)|(1<<SPR1)|(1<<SPR0);
-  PORTD &=~(1<<SD_cs);
-  SPI_send(0xFF);
-  SPI_send(cmd|0x40);//cmd is less then 64 but needs to start with 01
-  SPI_send((uint8_t)(ArgH>>8));
-  SPI_send((uint8_t)ArgH);
-  SPI_send((uint8_t)(ArgL>>8));
-  SPI_send((uint8_t)ArgL);
-  SPI_send(crc);
-  //SPI_send(0xFF);
-  //SPI_send(0xFF);
-  //SPI_send(0xFF);
-  for(arrayI=0;arrayI<10;arrayI++)
-  {
-   uart_putc(SPI_send(0xFF)+48);
-  }
-  spi_init();
-  return(SPDR);
-}//end sd_write
-
-
-void sd_write()
-{
-
-}
-
-
-void sd_read(uint16_t sector)
-{
-
-}
-
-void sd_init()
-{
-    
-
-  //SPSR|=(1<<SPI2X);		//resets to slower speed
-  SPCR=0;
-  SPCR=(1<<SPE)|(1<<MSTR)|(1<<SPR1)|(1<<SPR0); 
-  PORTD |=1<<SD_cs;   //set SD select bit high for reset
-  //need to send at least 74 consecutive 1's (So i will try 10 bytes)
-  uint8_t i=0;
-  for(i=0;i<11;i++)
-  {
-    SPDR=0xFF;//Send all 1's
-    while(bit_is_clear(SPSR,SPIF)){} //spin till done
-  }
-  PORTD &=~(1<<SD_cs);//select SD Card
-  _delay_ms(5);
-  SPDR=0x40;
-  while(bit_is_clear(SPSR,SPIF)){}
-  for(i=0;i<4;i++)
-  {
-    SPDR=0x40;//*********CHANGE BACK TO ZERO*************
-    while(bit_is_clear(SPSR,SPIF)){}
-  }
-  SPDR=0x95;
-  while(bit_is_clear(SPSR,SPIF)){}
-  //Should be set up, send jumk and read in response, a good response is 0x01
-  //_delay_ms(1);
-  uint8_t input=0;
-  for(i=0;i<=150;i++)
-  {
-    SPDR=0xFF;
-    while(bit_is_clear(SPSR,SPIF)){}
-    input=SPDR;
-    if(input==0x01){uart_puts("SD-Card Init: PASSED\n");break;}
-    //if(i==100){uart_puts("SD-Card Init: FAILED\n");break;}
-  }
- // uart_puts("Bits are set:");
-  //for(i=0;i<8;i++)
-  //{
-   // if(bit_is_set(input,i)){uart_putc(i+48);}
-  //}
-  spi_init();  //resets spi to faster rate, and deselects SD 
-}
-
+}//End SPI_send
 
 void sram_init()
 {	//Function will text comms with sram
@@ -292,8 +161,6 @@ void add_inc()
 }//end add_inc
 
 
-
-
 void mem_test()
 {
  add_l=0;
@@ -352,6 +219,31 @@ void record_shot()
   //char addH[5];
   count_t=0;
   num_records=0;
+  
+  while(1)
+  {
+    _delay_ms(500);
+    
+    PORTB&=~(1<<sensor1_cs);//select sensor
+    SPIgetAccel(&ax,&ay,&az);
+    PORTB|=(1<<sensor1_cs);//deselect sensor
+    //getAccel(&ax,&ay,&az,MPU9250_DEFAULT_ADDRESS);
+    itoa(ax,addL,10);
+    uart_puts("X axis: ");
+    uart_puts(addL);
+    
+    itoa(ay,addL,10);
+    uart_puts("Y axis: ");
+    uart_puts(addL);
+    
+    itoa(az,addL,10);
+    uart_puts("Z axis: ");
+    uart_puts(addL);
+    
+    
+  }
+  
+  //*********************************stop*******************
   while(count_t<20000)//for full shot change back to 20000************
   {
     num_records++;
@@ -508,27 +400,25 @@ int main()
 DDRD|=(1<<6)|(1<<7);//set LED pins as output
 //PORTD&=~(1<<3);//vibration off
 uart_init();//Keep this as first init so that text can be sent out in others
-
-while(1)
-{
 uart_puts("Starting up....");
 _delay_ms(500);
 PORTD|=1<<6;
 _delay_ms(500);
 PORTD&=~(1<<6);
-
-}
 spi_init(); //initialize SPI bus as master
 init_tcnt2();//set up timer (RTC)
 init_twi(); //initialize TWI interface
 sei();
-//uart_puts("Pre Init...");
-init_MPU(MPU9250_FULL_SCALE_4G,MPU9250_GYRO_FULL_SCALE_500DPS, MPU9250_DEFAULT_ADDRESS); //initialize the 9axis sensor
+uart_puts("Pre Init...");
+  
+PORTB&=~(1<<sensor1_cs);//select sensor
+SPIinit_MPU(MPU9250_FULL_SCALE_4G,MPU9250_GYRO_FULL_SCALE_500DPS);//init sensor
+PORTB|=(1<<sensor1_cs);//deselect sensor
+//init_MPU(MPU9250_FULL_SCALE_4G,MPU9250_GYRO_FULL_SCALE_500DPS, MPU9250_DEFAULT_ADDRESS); //initialize the 9axis sensor
 //init_MPU(0,0, 0xD1); //initialize the 9axis sensor
-init_MPU(MPU9250_FULL_SCALE_4G,MPU9250_GYRO_FULL_SCALE_500DPS, MPU9250_DEFAULT_ADDRESS); //initialize the 9axis sensor
-sd_init();  //initialize SD card
+//init_MPU(MPU9250_FULL_SCALE_4G,MPU9250_GYRO_FULL_SCALE_500DPS, MPU9250_DEFAULT_ADDRESS); //initialize the 9axis sensor
 sram_init();//initialize sram
-//uart_puts("Post Init...");
+uart_puts("Post Init...");
 //vibrate(100);	//Send feedback showing complete setup
 PORTD |=(1<<6)|(1<<7);
 PORTD &=~(1<<7);
@@ -538,7 +428,8 @@ PORTD &=~(1<<6);// blinks both lights to show the program is starting
 _delay_ms(200);
 PORTD |=(1<<6);
 _delay_ms(1000);
-
+record_shot();
+while(1){}        //*****************STOP POINT**********************
 /*
 test_result = test_com(0, MPU9250_DEFAULT_ADDRESS);
 if(test_result)
@@ -583,20 +474,11 @@ uart_putc('\n');
 
 PORTD |=(1<<6);//turn off light
 //vibrate(100);_delay_ms(100);vibrate(100);  //Double vibration showing end of shot
-//************************( 4 )*******************************************************
-sd_write(1,sd_buf);//Write data to SD card
-//************************( 5 )*******************************************************
 //check_voltage();//Check system voltage
 _delay_ms(5000);//wait 60 seconds
 //************************( 6 )*******************************************************
 continue; //start over and take another shot
 
-  //uart_puts("sd_write called....");
-//  uart_puts("\2 00001,04502,12403,04204,12005,13576,06507,65008,99909,13010,11111,\4");
-//  uart_puts("00001,00002,00003,00004,00005,\8\8\8\8,00007,00008,00009,00010,00011,\4");
-  //uart_putc(4);
-  //_delay_ms(1000);
-  //continue;
   uart_puts("Starting Testing\n\n");
   uart_putc('\r');
   rx_char=uart_getc(); 
@@ -606,17 +488,10 @@ continue; //start over and take another shot
     rx_char=uart_getc();
     while(rx_char!='c')
     {
-      if(rx_char=='s'){sd_init();}
-     if(rx_char=='w')
-     {
-       
-       //for(arrayI=0;arrayI<0xFF;arrayI++)
-       //{
-       sd_cmd(0x10,0,512,CRC);  //sets block size
-       //}
-     }
-      if(rx_char=='r'){sd_read(1);uart_puts(sd_buf);}//buffer gets set to sector!!
-      if(rx_char=='i'){i2c_test();}
+      if(rx_char=='s'){}
+     if(rx_char=='w'){}
+      if(rx_char=='r'){}//buffer gets set to sector!!
+      if(rx_char=='i'){}
       rx_char=uart_getc();
     }
   }
