@@ -1,5 +1,5 @@
 #ifndef  F_CPU
-#define F_CPU 16000000UL
+#define F_CPU 8000000UL
 #endif
 
 #include <avr/io.h>
@@ -49,7 +49,7 @@ uint8_t i2c_write(uint8_t data)
 	// start transmission of data
 	TWCR = (1<<TWINT) | (1<<TWEN);
 	// wait for end of transmission
-	//while( !(TWCR & (1<<TWINT)) );//**********FIX ME******
+	while( !(TWCR & (1<<TWINT)) );
 	
 	if( (TWSR & 0xF8) != TW_MT_DATA_ACK ){ return 1; }
 	
@@ -81,8 +81,8 @@ uint8_t i2c_read_nack(void)
 uint8_t i2c_transmit(uint8_t address, uint8_t* data, uint16_t length)
 {
 	if (i2c_start(address | I2C_WRITE)) return 1;
-	uint16_t i=0;	
-	for (i = 0; i < length; i++)
+	
+	for (uint16_t i = 0; i < length; i++)
 	{
 		if (i2c_write(data[i])) return 1;
 	}
@@ -95,8 +95,8 @@ uint8_t i2c_transmit(uint8_t address, uint8_t* data, uint16_t length)
 uint8_t i2c_receive(uint8_t address, uint8_t* data, uint16_t length)
 {
 	if (i2c_start(address | I2C_READ)) return 1;
-	uint16_t i=0;
-	for (i = 0; i < (length-1); i++)
+	
+	for (uint16_t i = 0; i < (length-1); i++)
 	{
 		data[i] = i2c_read_ack();
 	}
@@ -107,13 +107,13 @@ uint8_t i2c_receive(uint8_t address, uint8_t* data, uint16_t length)
 	return 0;
 }
 
-uint8_t i2c_writeReg(uint8_t devaddr, uint8_t regaddr, uint8_t* data, uint16_t length)
+uint8_t i2c_writeReg(uint8_t devaddr, uint8_t regaddr, uint16_t length, uint8_t* data)
 {
 	if (i2c_start(devaddr | 0x00)) return 1;
 
 	i2c_write(regaddr);
-	uint16_t i=0;
-	for (i = 0; i < length; i++)
+
+	for (uint16_t i = 0; i < length; i++)
 	{
 		if (i2c_write(data[i])) return 1;
 	}
@@ -123,15 +123,15 @@ uint8_t i2c_writeReg(uint8_t devaddr, uint8_t regaddr, uint8_t* data, uint16_t l
 	return 0;
 }
 
-uint8_t i2c_readReg(uint8_t devaddr, uint8_t regaddr, uint8_t* data, uint16_t length)
+uint8_t i2c_readReg(uint8_t devaddr, uint8_t regaddr, uint16_t length, uint8_t* data)
 {
 	if (i2c_start(devaddr)) return 1;
 
 	i2c_write(regaddr);
 
 	if (i2c_start(devaddr | 0x01)) return 1;
-	uint16_t i=0;
-	for (i = 0; i < (length-1); i++)
+
+	for (uint16_t i = 0; i < (length-1); i++)
 	{
 		data[i] = i2c_read_ack();
 	}
