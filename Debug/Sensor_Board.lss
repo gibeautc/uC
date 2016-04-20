@@ -1,0 +1,525 @@
+
+Sensor_Board.elf:     file format elf32-avr
+
+Sections:
+Idx Name          Size      VMA       LMA       File off  Algn
+  0 .data         00000000  00800100  00800100  00000336  2**0
+                  CONTENTS, ALLOC, LOAD, DATA
+  1 .text         000002e2  00000000  00000000  00000054  2**1
+                  CONTENTS, ALLOC, LOAD, READONLY, CODE
+  2 .comment      00000030  00000000  00000000  00000336  2**0
+                  CONTENTS, READONLY
+  3 .note.gnu.avr.deviceinfo 00000040  00000000  00000000  00000368  2**2
+                  CONTENTS, READONLY
+  4 .debug_aranges 000000e0  00000000  00000000  000003a8  2**0
+                  CONTENTS, READONLY, DEBUGGING
+  5 .debug_info   00000a96  00000000  00000000  00000488  2**0
+                  CONTENTS, READONLY, DEBUGGING
+  6 .debug_abbrev 00000447  00000000  00000000  00000f1e  2**0
+                  CONTENTS, READONLY, DEBUGGING
+  7 .debug_line   0000050d  00000000  00000000  00001365  2**0
+                  CONTENTS, READONLY, DEBUGGING
+  8 .debug_frame  00000168  00000000  00000000  00001874  2**2
+                  CONTENTS, READONLY, DEBUGGING
+  9 .debug_str    000002a0  00000000  00000000  000019dc  2**0
+                  CONTENTS, READONLY, DEBUGGING
+ 10 .debug_loc    0000079f  00000000  00000000  00001c7c  2**0
+                  CONTENTS, READONLY, DEBUGGING
+ 11 .debug_ranges 000000b8  00000000  00000000  0000241b  2**0
+                  CONTENTS, READONLY, DEBUGGING
+
+Disassembly of section .text:
+
+00000000 <__vectors>:
+   0:	0c 94 34 00 	jmp	0x68	; 0x68 <__ctors_end>
+   4:	0c 94 51 00 	jmp	0xa2	; 0xa2 <__bad_interrupt>
+   8:	0c 94 51 00 	jmp	0xa2	; 0xa2 <__bad_interrupt>
+   c:	0c 94 51 00 	jmp	0xa2	; 0xa2 <__bad_interrupt>
+  10:	0c 94 51 00 	jmp	0xa2	; 0xa2 <__bad_interrupt>
+  14:	0c 94 51 00 	jmp	0xa2	; 0xa2 <__bad_interrupt>
+  18:	0c 94 51 00 	jmp	0xa2	; 0xa2 <__bad_interrupt>
+  1c:	0c 94 51 00 	jmp	0xa2	; 0xa2 <__bad_interrupt>
+  20:	0c 94 51 00 	jmp	0xa2	; 0xa2 <__bad_interrupt>
+  24:	0c 94 51 00 	jmp	0xa2	; 0xa2 <__bad_interrupt>
+  28:	0c 94 51 00 	jmp	0xa2	; 0xa2 <__bad_interrupt>
+  2c:	0c 94 51 00 	jmp	0xa2	; 0xa2 <__bad_interrupt>
+  30:	0c 94 51 00 	jmp	0xa2	; 0xa2 <__bad_interrupt>
+  34:	0c 94 51 00 	jmp	0xa2	; 0xa2 <__bad_interrupt>
+  38:	0c 94 51 00 	jmp	0xa2	; 0xa2 <__bad_interrupt>
+  3c:	0c 94 51 00 	jmp	0xa2	; 0xa2 <__bad_interrupt>
+  40:	0c 94 51 00 	jmp	0xa2	; 0xa2 <__bad_interrupt>
+  44:	0c 94 51 00 	jmp	0xa2	; 0xa2 <__bad_interrupt>
+  48:	0c 94 51 00 	jmp	0xa2	; 0xa2 <__bad_interrupt>
+  4c:	0c 94 51 00 	jmp	0xa2	; 0xa2 <__bad_interrupt>
+  50:	0c 94 51 00 	jmp	0xa2	; 0xa2 <__bad_interrupt>
+  54:	0c 94 51 00 	jmp	0xa2	; 0xa2 <__bad_interrupt>
+  58:	0c 94 51 00 	jmp	0xa2	; 0xa2 <__bad_interrupt>
+  5c:	0c 94 51 00 	jmp	0xa2	; 0xa2 <__bad_interrupt>
+  60:	0c 94 51 00 	jmp	0xa2	; 0xa2 <__bad_interrupt>
+  64:	0c 94 51 00 	jmp	0xa2	; 0xa2 <__bad_interrupt>
+
+00000068 <__ctors_end>:
+  68:	11 24       	eor	r1, r1
+  6a:	1f be       	out	0x3f, r1	; 63
+  6c:	cf ef       	ldi	r28, 0xFF	; 255
+  6e:	d8 e0       	ldi	r29, 0x08	; 8
+  70:	de bf       	out	0x3e, r29	; 62
+  72:	cd bf       	out	0x3d, r28	; 61
+
+00000074 <__do_copy_data>:
+  74:	11 e0       	ldi	r17, 0x01	; 1
+  76:	a0 e0       	ldi	r26, 0x00	; 0
+  78:	b1 e0       	ldi	r27, 0x01	; 1
+  7a:	e2 ee       	ldi	r30, 0xE2	; 226
+  7c:	f2 e0       	ldi	r31, 0x02	; 2
+  7e:	02 c0       	rjmp	.+4      	; 0x84 <__do_copy_data+0x10>
+  80:	05 90       	lpm	r0, Z+
+  82:	0d 92       	st	X+, r0
+  84:	a0 30       	cpi	r26, 0x00	; 0
+  86:	b1 07       	cpc	r27, r17
+  88:	d9 f7       	brne	.-10     	; 0x80 <__do_copy_data+0xc>
+
+0000008a <__do_clear_bss>:
+  8a:	21 e0       	ldi	r18, 0x01	; 1
+  8c:	a0 e0       	ldi	r26, 0x00	; 0
+  8e:	b1 e0       	ldi	r27, 0x01	; 1
+  90:	01 c0       	rjmp	.+2      	; 0x94 <.do_clear_bss_start>
+
+00000092 <.do_clear_bss_loop>:
+  92:	1d 92       	st	X+, r1
+
+00000094 <.do_clear_bss_start>:
+  94:	a0 30       	cpi	r26, 0x00	; 0
+  96:	b2 07       	cpc	r27, r18
+  98:	e1 f7       	brne	.-8      	; 0x92 <.do_clear_bss_loop>
+  9a:	0e 94 2f 01 	call	0x25e	; 0x25e <main>
+  9e:	0c 94 6f 01 	jmp	0x2de	; 0x2de <_exit>
+
+000000a2 <__bad_interrupt>:
+  a2:	0c 94 00 00 	jmp	0	; 0x0 <__vectors>
+
+000000a6 <init_Feedback>:
+
+volatile unsigned long count_t=0;
+
+void init_Feedback(void)
+{
+	DDRD |= (1<<R_LED)|(1<<G_LED)|(1<<Vibration);
+  a6:	8a b1       	in	r24, 0x0a	; 10
+  a8:	80 6e       	ori	r24, 0xE0	; 224
+  aa:	8a b9       	out	0x0a, r24	; 10
+	PORTD |= (1<<R_LED)|(1<<G_LED)|(0<<Vibration);
+  ac:	8b b1       	in	r24, 0x0b	; 11
+  ae:	80 6c       	ori	r24, 0xC0	; 192
+  b0:	8b b9       	out	0x0b, r24	; 11
+  b2:	08 95       	ret
+
+000000b4 <LED>:
+}
+
+void LED(uint8_t LED_Sel, uint8_t Pattern)
+{
+	switch (Pattern)
+  b4:	61 30       	cpi	r22, 0x01	; 1
+  b6:	19 f1       	breq	.+70     	; 0xfe <LED+0x4a>
+  b8:	38 f0       	brcs	.+14     	; 0xc8 <LED+0x14>
+  ba:	62 30       	cpi	r22, 0x02	; 2
+  bc:	09 f4       	brne	.+2      	; 0xc0 <LED+0xc>
+  be:	6b c0       	rjmp	.+214    	; 0x196 <LED+0xe2>
+  c0:	64 30       	cpi	r22, 0x04	; 4
+  c2:	09 f4       	brne	.+2      	; 0xc6 <LED+0x12>
+  c4:	83 c0       	rjmp	.+262    	; 0x1cc <LED+0x118>
+  c6:	08 95       	ret
+	{
+		case Pulse_1:
+			PinLOW(PORTD, LED_Sel);
+  c8:	4b b1       	in	r20, 0x0b	; 11
+  ca:	21 e0       	ldi	r18, 0x01	; 1
+  cc:	30 e0       	ldi	r19, 0x00	; 0
+  ce:	b9 01       	movw	r22, r18
+  d0:	02 c0       	rjmp	.+4      	; 0xd6 <LED+0x22>
+  d2:	66 0f       	add	r22, r22
+  d4:	77 1f       	adc	r23, r23
+  d6:	8a 95       	dec	r24
+  d8:	e2 f7       	brpl	.-8      	; 0xd2 <LED+0x1e>
+  da:	cb 01       	movw	r24, r22
+  dc:	96 2f       	mov	r25, r22
+  de:	90 95       	com	r25
+  e0:	94 23       	and	r25, r20
+  e2:	9b b9       	out	0x0b, r25	; 11
+	#else
+		//round up by default
+		__ticks_dc = (uint32_t)(ceil(fabs(__tmp)));
+	#endif
+
+	__builtin_avr_delay_cycles(__ticks_dc);
+  e4:	7f ef       	ldi	r23, 0xFF	; 255
+  e6:	21 ee       	ldi	r18, 0xE1	; 225
+  e8:	34 e0       	ldi	r19, 0x04	; 4
+  ea:	71 50       	subi	r23, 0x01	; 1
+  ec:	20 40       	sbci	r18, 0x00	; 0
+  ee:	30 40       	sbci	r19, 0x00	; 0
+  f0:	e1 f7       	brne	.-8      	; 0xea <LED+0x36>
+  f2:	00 c0       	rjmp	.+0      	; 0xf4 <LED+0x40>
+  f4:	00 00       	nop
+			_delay_ms(200);
+			PinHIGH(PORTD, LED_Sel);
+  f6:	9b b1       	in	r25, 0x0b	; 11
+  f8:	89 2b       	or	r24, r25
+  fa:	8b b9       	out	0x0b, r24	; 11
+			break;
+  fc:	08 95       	ret
+		case Pulse_3:
+			PinLOW(PORTD, LED_Sel);
+  fe:	4b b1       	in	r20, 0x0b	; 11
+ 100:	21 e0       	ldi	r18, 0x01	; 1
+ 102:	30 e0       	ldi	r19, 0x00	; 0
+ 104:	b9 01       	movw	r22, r18
+ 106:	02 c0       	rjmp	.+4      	; 0x10c <LED+0x58>
+ 108:	66 0f       	add	r22, r22
+ 10a:	77 1f       	adc	r23, r23
+ 10c:	8a 95       	dec	r24
+ 10e:	e2 f7       	brpl	.-8      	; 0x108 <LED+0x54>
+ 110:	cb 01       	movw	r24, r22
+ 112:	26 2f       	mov	r18, r22
+ 114:	20 95       	com	r18
+ 116:	92 2f       	mov	r25, r18
+ 118:	94 23       	and	r25, r20
+ 11a:	9b b9       	out	0x0b, r25	; 11
+ 11c:	7f ef       	ldi	r23, 0xFF	; 255
+ 11e:	31 ee       	ldi	r19, 0xE1	; 225
+ 120:	44 e0       	ldi	r20, 0x04	; 4
+ 122:	71 50       	subi	r23, 0x01	; 1
+ 124:	30 40       	sbci	r19, 0x00	; 0
+ 126:	40 40       	sbci	r20, 0x00	; 0
+ 128:	e1 f7       	brne	.-8      	; 0x122 <LED+0x6e>
+ 12a:	00 c0       	rjmp	.+0      	; 0x12c <LED+0x78>
+ 12c:	00 00       	nop
+			_delay_ms(200);
+			PinHIGH(PORTD, LED_Sel);
+ 12e:	9b b1       	in	r25, 0x0b	; 11
+ 130:	98 2b       	or	r25, r24
+ 132:	9b b9       	out	0x0b, r25	; 11
+ 134:	5f ef       	ldi	r21, 0xFF	; 255
+ 136:	61 ee       	ldi	r22, 0xE1	; 225
+ 138:	74 e0       	ldi	r23, 0x04	; 4
+ 13a:	51 50       	subi	r21, 0x01	; 1
+ 13c:	60 40       	sbci	r22, 0x00	; 0
+ 13e:	70 40       	sbci	r23, 0x00	; 0
+ 140:	e1 f7       	brne	.-8      	; 0x13a <LED+0x86>
+ 142:	00 c0       	rjmp	.+0      	; 0x144 <LED+0x90>
+ 144:	00 00       	nop
+			_delay_ms(200);
+			PinLOW(PORTD, LED_Sel);
+ 146:	9b b1       	in	r25, 0x0b	; 11
+ 148:	92 23       	and	r25, r18
+ 14a:	9b b9       	out	0x0b, r25	; 11
+ 14c:	3f ef       	ldi	r19, 0xFF	; 255
+ 14e:	41 ee       	ldi	r20, 0xE1	; 225
+ 150:	54 e0       	ldi	r21, 0x04	; 4
+ 152:	31 50       	subi	r19, 0x01	; 1
+ 154:	40 40       	sbci	r20, 0x00	; 0
+ 156:	50 40       	sbci	r21, 0x00	; 0
+ 158:	e1 f7       	brne	.-8      	; 0x152 <LED+0x9e>
+ 15a:	00 c0       	rjmp	.+0      	; 0x15c <LED+0xa8>
+ 15c:	00 00       	nop
+			_delay_ms(200);
+			PinHIGH(PORTD, LED_Sel);
+ 15e:	9b b1       	in	r25, 0x0b	; 11
+ 160:	98 2b       	or	r25, r24
+ 162:	9b b9       	out	0x0b, r25	; 11
+ 164:	6f ef       	ldi	r22, 0xFF	; 255
+ 166:	71 ee       	ldi	r23, 0xE1	; 225
+ 168:	34 e0       	ldi	r19, 0x04	; 4
+ 16a:	61 50       	subi	r22, 0x01	; 1
+ 16c:	70 40       	sbci	r23, 0x00	; 0
+ 16e:	30 40       	sbci	r19, 0x00	; 0
+ 170:	e1 f7       	brne	.-8      	; 0x16a <LED+0xb6>
+ 172:	00 c0       	rjmp	.+0      	; 0x174 <LED+0xc0>
+ 174:	00 00       	nop
+			_delay_ms(200);
+			PinLOW(PORTD, LED_Sel);
+ 176:	9b b1       	in	r25, 0x0b	; 11
+ 178:	92 23       	and	r25, r18
+ 17a:	9b b9       	out	0x0b, r25	; 11
+ 17c:	4f ef       	ldi	r20, 0xFF	; 255
+ 17e:	51 ee       	ldi	r21, 0xE1	; 225
+ 180:	64 e0       	ldi	r22, 0x04	; 4
+ 182:	41 50       	subi	r20, 0x01	; 1
+ 184:	50 40       	sbci	r21, 0x00	; 0
+ 186:	60 40       	sbci	r22, 0x00	; 0
+ 188:	e1 f7       	brne	.-8      	; 0x182 <LED+0xce>
+ 18a:	00 c0       	rjmp	.+0      	; 0x18c <LED+0xd8>
+ 18c:	00 00       	nop
+			_delay_ms(200);
+			PinHIGH(PORTD, LED_Sel);
+ 18e:	9b b1       	in	r25, 0x0b	; 11
+ 190:	89 2b       	or	r24, r25
+ 192:	8b b9       	out	0x0b, r24	; 11
+			break;
+ 194:	08 95       	ret
+		case Pulse_Long:
+			PinLOW(PORTD, LED_Sel);
+ 196:	4b b1       	in	r20, 0x0b	; 11
+ 198:	21 e0       	ldi	r18, 0x01	; 1
+ 19a:	30 e0       	ldi	r19, 0x00	; 0
+ 19c:	b9 01       	movw	r22, r18
+ 19e:	02 c0       	rjmp	.+4      	; 0x1a4 <LED+0xf0>
+ 1a0:	66 0f       	add	r22, r22
+ 1a2:	77 1f       	adc	r23, r23
+ 1a4:	8a 95       	dec	r24
+ 1a6:	e2 f7       	brpl	.-8      	; 0x1a0 <LED+0xec>
+ 1a8:	cb 01       	movw	r24, r22
+ 1aa:	96 2f       	mov	r25, r22
+ 1ac:	90 95       	com	r25
+ 1ae:	94 23       	and	r25, r20
+ 1b0:	9b b9       	out	0x0b, r25	; 11
+ 1b2:	7f ef       	ldi	r23, 0xFF	; 255
+ 1b4:	29 e6       	ldi	r18, 0x69	; 105
+ 1b6:	38 e1       	ldi	r19, 0x18	; 24
+ 1b8:	71 50       	subi	r23, 0x01	; 1
+ 1ba:	20 40       	sbci	r18, 0x00	; 0
+ 1bc:	30 40       	sbci	r19, 0x00	; 0
+ 1be:	e1 f7       	brne	.-8      	; 0x1b8 <LED+0x104>
+ 1c0:	00 c0       	rjmp	.+0      	; 0x1c2 <LED+0x10e>
+ 1c2:	00 00       	nop
+			_delay_ms(1000);
+			PinHIGH(PORTD, LED_Sel);
+ 1c4:	9b b1       	in	r25, 0x0b	; 11
+ 1c6:	89 2b       	or	r24, r25
+ 1c8:	8b b9       	out	0x0b, r24	; 11
+			break;
+ 1ca:	08 95       	ret
+		case Alternate:
+			PinLOW(PORTD, R_LED);
+ 1cc:	5f 98       	cbi	0x0b, 7	; 11
+ 1ce:	4f ef       	ldi	r20, 0xFF	; 255
+ 1d0:	51 ee       	ldi	r21, 0xE1	; 225
+ 1d2:	64 e0       	ldi	r22, 0x04	; 4
+ 1d4:	41 50       	subi	r20, 0x01	; 1
+ 1d6:	50 40       	sbci	r21, 0x00	; 0
+ 1d8:	60 40       	sbci	r22, 0x00	; 0
+ 1da:	e1 f7       	brne	.-8      	; 0x1d4 <LED+0x120>
+ 1dc:	00 c0       	rjmp	.+0      	; 0x1de <LED+0x12a>
+ 1de:	00 00       	nop
+			_delay_ms(200);
+			PinHIGH(PORTD, R_LED);
+ 1e0:	5f 9a       	sbi	0x0b, 7	; 11
+ 1e2:	8f e1       	ldi	r24, 0x1F	; 31
+ 1e4:	9e e4       	ldi	r25, 0x4E	; 78
+ 1e6:	01 97       	sbiw	r24, 0x01	; 1
+ 1e8:	f1 f7       	brne	.-4      	; 0x1e6 <LED+0x132>
+ 1ea:	00 c0       	rjmp	.+0      	; 0x1ec <LED+0x138>
+ 1ec:	00 00       	nop
+			_delay_ms(10);
+			PinLOW(PORTD, G_LED);
+ 1ee:	5e 98       	cbi	0x0b, 6	; 11
+ 1f0:	9f ef       	ldi	r25, 0xFF	; 255
+ 1f2:	21 ee       	ldi	r18, 0xE1	; 225
+ 1f4:	34 e0       	ldi	r19, 0x04	; 4
+ 1f6:	91 50       	subi	r25, 0x01	; 1
+ 1f8:	20 40       	sbci	r18, 0x00	; 0
+ 1fa:	30 40       	sbci	r19, 0x00	; 0
+ 1fc:	e1 f7       	brne	.-8      	; 0x1f6 <LED+0x142>
+ 1fe:	00 c0       	rjmp	.+0      	; 0x200 <LED+0x14c>
+ 200:	00 00       	nop
+			_delay_ms(200);
+			PinHIGH(PORTD, G_LED);
+ 202:	5e 9a       	sbi	0x0b, 6	; 11
+			PinLOW(PORTD, R_LED);
+ 204:	5f 98       	cbi	0x0b, 7	; 11
+ 206:	4f ef       	ldi	r20, 0xFF	; 255
+ 208:	51 ee       	ldi	r21, 0xE1	; 225
+ 20a:	64 e0       	ldi	r22, 0x04	; 4
+ 20c:	41 50       	subi	r20, 0x01	; 1
+ 20e:	50 40       	sbci	r21, 0x00	; 0
+ 210:	60 40       	sbci	r22, 0x00	; 0
+ 212:	e1 f7       	brne	.-8      	; 0x20c <LED+0x158>
+ 214:	00 c0       	rjmp	.+0      	; 0x216 <LED+0x162>
+ 216:	00 00       	nop
+			_delay_ms(200);
+			PinHIGH(PORTD, R_LED);
+ 218:	5f 9a       	sbi	0x0b, 7	; 11
+ 21a:	8f e1       	ldi	r24, 0x1F	; 31
+ 21c:	9e e4       	ldi	r25, 0x4E	; 78
+ 21e:	01 97       	sbiw	r24, 0x01	; 1
+ 220:	f1 f7       	brne	.-4      	; 0x21e <LED+0x16a>
+ 222:	00 c0       	rjmp	.+0      	; 0x224 <LED+0x170>
+ 224:	00 00       	nop
+			_delay_ms(10);
+			PinLOW(PORTD, G_LED);
+ 226:	5e 98       	cbi	0x0b, 6	; 11
+ 228:	9f ef       	ldi	r25, 0xFF	; 255
+ 22a:	21 ee       	ldi	r18, 0xE1	; 225
+ 22c:	34 e0       	ldi	r19, 0x04	; 4
+ 22e:	91 50       	subi	r25, 0x01	; 1
+ 230:	20 40       	sbci	r18, 0x00	; 0
+ 232:	30 40       	sbci	r19, 0x00	; 0
+ 234:	e1 f7       	brne	.-8      	; 0x22e <LED+0x17a>
+ 236:	00 c0       	rjmp	.+0      	; 0x238 <LED+0x184>
+ 238:	00 00       	nop
+			_delay_ms(200);
+			PinHIGH(PORTD, G_LED);
+ 23a:	5e 9a       	sbi	0x0b, 6	; 11
+ 23c:	08 95       	ret
+
+0000023e <init_tcnt2>:
+	return;
+}
+
+void init_tcnt2()
+{
+	ASSR |=(0<<AS2);//Run of 32khz osc
+ 23e:	e6 eb       	ldi	r30, 0xB6	; 182
+ 240:	f0 e0       	ldi	r31, 0x00	; 0
+ 242:	80 81       	ld	r24, Z
+ 244:	80 83       	st	Z, r24
+	TIMSK2=0x00;  //reset TIMSK
+ 246:	e0 e7       	ldi	r30, 0x70	; 112
+ 248:	f0 e0       	ldi	r31, 0x00	; 0
+ 24a:	10 82       	st	Z, r1
+	TIMSK2 |=(1<<TOIE2);//turns on comp match interupt
+ 24c:	80 81       	ld	r24, Z
+ 24e:	81 60       	ori	r24, 0x01	; 1
+ 250:	80 83       	st	Z, r24
+	TCCR2A=0;
+ 252:	10 92 b0 00 	sts	0x00B0, r1
+	TCCR2B=(1<<CS21)|(1<<CS20);//Normal mode prescale 32 should give a 1ms count
+ 256:	83 e0       	ldi	r24, 0x03	; 3
+ 258:	80 93 b1 00 	sts	0x00B1, r24
+ 25c:	08 95       	ret
+
+0000025e <main>:
+{
+	//int16_t ax=0,ay=0,az=0;
+	//int16_t gx,gy,gz;
+	//char addL[10];
+	
+	init_Feedback();
+ 25e:	0e 94 53 00 	call	0xa6	; 0xa6 <init_Feedback>
+	init_SPI();
+ 262:	0e 94 4f 01 	call	0x29e	; 0x29e <init_SPI>
+	uart_init();
+ 266:	0e 94 5f 01 	call	0x2be	; 0x2be <uart_init>
+	init_tcnt2();
+ 26a:	0e 94 1f 01 	call	0x23e	; 0x23e <init_tcnt2>
+	select(sensor2_cs);
+	SPIinit_MPU(MPU9250_FULL_SCALE_4G, MPU9250_GYRO_FULL_SCALE_500DPS);
+	deselect(sensor2_cs);
+*/
+	//Initializations Successful
+	LED(G_LED, Pulse_3);
+ 26e:	61 e0       	ldi	r22, 0x01	; 1
+ 270:	86 e0       	ldi	r24, 0x06	; 6
+ 272:	0e 94 5a 00 	call	0xb4	; 0xb4 <LED>
+	
+    while (1) 
+    {
+	
+		
+    }
+ 276:	ff cf       	rjmp	.-2      	; 0x276 <main+0x18>
+
+00000278 <deselect>:
+	return;
+}
+
+void deselect(uint8_t slvdevice){
+{
+		switch (slvdevice)
+ 278:	82 30       	cpi	r24, 0x02	; 2
+ 27a:	49 f0       	breq	.+18     	; 0x28e <deselect+0x16>
+ 27c:	18 f4       	brcc	.+6      	; 0x284 <deselect+0xc>
+ 27e:	88 23       	and	r24, r24
+ 280:	61 f0       	breq	.+24     	; 0x29a <deselect+0x22>
+ 282:	08 95       	ret
+ 284:	86 30       	cpi	r24, 0x06	; 6
+ 286:	39 f0       	breq	.+14     	; 0x296 <deselect+0x1e>
+ 288:	87 30       	cpi	r24, 0x07	; 7
+ 28a:	19 f0       	breq	.+6      	; 0x292 <deselect+0x1a>
+ 28c:	08 95       	ret
+		{
+			case sensor1_cs:
+			PinHIGH(PORTB, sensor1_cs);
+ 28e:	2a 9a       	sbi	0x05, 2	; 5
+			break;
+ 290:	08 95       	ret
+			case sensor2_cs:
+			PinHIGH(PORTB, sensor2_cs);
+ 292:	2f 9a       	sbi	0x05, 7	; 5
+			break;
+ 294:	08 95       	ret
+			case sensor3_cs:
+			PinHIGH(PORTB, sensor3_cs);
+ 296:	2e 9a       	sbi	0x05, 6	; 5
+			break;
+ 298:	08 95       	ret
+			case sram_cs:
+			PinHIGH(PORTC, sram_cs);
+ 29a:	40 9a       	sbi	0x08, 0	; 8
+ 29c:	08 95       	ret
+
+0000029e <init_SPI>:
+#include "SPI.h"
+
+void init_SPI()
+{
+	//DDRB houses SPI pins SCK-5 MOSI-3 MISO-4 used for programing
+	DDRB|=(1<<5)|(1<<3)|(0<<4)|(1<<sensor1_cs)|(1<<1)|(1<<sensor2_cs);
+ 29e:	84 b1       	in	r24, 0x04	; 4
+ 2a0:	8e 6a       	ori	r24, 0xAE	; 174
+ 2a2:	84 b9       	out	0x04, r24	; 4
+	deselect(sensor1_cs);
+ 2a4:	82 e0       	ldi	r24, 0x02	; 2
+ 2a6:	0e 94 3c 01 	call	0x278	; 0x278 <deselect>
+	deselect(sensor2_cs);
+ 2aa:	87 e0       	ldi	r24, 0x07	; 7
+ 2ac:	0e 94 3c 01 	call	0x278	; 0x278 <deselect>
+	DDRC |=(1<<sram_cs);//Sets up chip select for sram
+ 2b0:	38 9a       	sbi	0x07, 0	; 7
+	PORTC|=(1<<sram_cs);//deselect
+ 2b2:	40 9a       	sbi	0x08, 0	; 8
+	SPCR=0;
+ 2b4:	1c bc       	out	0x2c, r1	; 44
+	SPCR=(1<<SPE)|(1<<MSTR)|(1<<SPR0);  //master mode sets 2x speed
+ 2b6:	81 e5       	ldi	r24, 0x51	; 81
+ 2b8:	8c bd       	out	0x2c, r24	; 44
+	//(1<<SPR0);
+	//SPSR=(1<<SPI2X);
+	SPSR=0;
+ 2ba:	1d bc       	out	0x2d, r1	; 45
+ 2bc:	08 95       	ret
+
+000002be <uart_init>:
+//must be in place for the MAX232 chip to get data.
+
+void uart_init(){
+//rx and tx enable, receive interrupt enabled, 8 bit characters
+//  UCSR0B |= (1<<RXEN0) | (1<<TXEN0) | (1<<RXCIE0);
+  UCSR0B |= (1<<RXEN0) | (1<<TXEN0);  //INTERRUPS DISABLED!!!
+ 2be:	e1 ec       	ldi	r30, 0xC1	; 193
+ 2c0:	f0 e0       	ldi	r31, 0x00	; 0
+ 2c2:	80 81       	ld	r24, Z
+ 2c4:	88 61       	ori	r24, 0x18	; 24
+ 2c6:	80 83       	st	Z, r24
+
+//  UCSR0B |= (1<<RXEN0) | (1<<TXEN0) ;
+//async operation, no parity,  one stop bit, 8-bit characters
+UCSR0C |= (1<<UCSZ01) | (1<<UCSZ00);
+ 2c8:	e2 ec       	ldi	r30, 0xC2	; 194
+ 2ca:	f0 e0       	ldi	r31, 0x00	; 0
+ 2cc:	80 81       	ld	r24, Z
+ 2ce:	86 60       	ori	r24, 0x06	; 6
+ 2d0:	80 83       	st	Z, r24
+UBRR0H = (BAUDVALUE >>8 ); //load upper byte of the baud rate into UBRR 
+ 2d2:	10 92 c5 00 	sts	0x00C5, r1
+UBRR0L =  BAUDVALUE;       //load lower byte of the baud rate into UBRR 
+ 2d6:	8c e0       	ldi	r24, 0x0C	; 12
+ 2d8:	80 93 c4 00 	sts	0x00C4, r24
+ 2dc:	08 95       	ret
+
+000002de <_exit>:
+ 2de:	f8 94       	cli
+
+000002e0 <__stop_program>:
+ 2e0:	ff cf       	rjmp	.-2      	; 0x2e0 <__stop_program>

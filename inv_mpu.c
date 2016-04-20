@@ -43,9 +43,14 @@
 #include <util/delay.h>
 #include "SPI.h"
 #include "UART.h"
+#include "Feedback.h"
 #define i2c_write	i2c_writeReg
 #define i2c_read	i2c_readReg	
 #define delay_ms	_delay_ms
+#define min(a,b) ((a<b)?a:b)
+#define log_e(...)   do {} while (0)
+#define log_i(...)   do {} while (0)
+
 
 #elif defined MOTION_DRIVER_TARGET_MSP430
 #include "msp430.h"
@@ -769,8 +774,8 @@ int mpu_init(struct int_param_s *int_param)
     if (mpu_configure_fifo(0))
         return -1;
 
-    if (int_param)
-        reg_int_cb(int_param);
+    //if (int_param)
+      //  reg_int_cb(int_param);
 
 #ifdef AK89xx_SECONDARY
     setup_compass();

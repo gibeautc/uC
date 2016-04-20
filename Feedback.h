@@ -25,5 +25,8 @@
 void init_Feedback(void);
 void LED(uint8_t LED_Sel, uint8_t Pattern);
 void Vibrate(uint8_t Pattern);
+void init_tcnt2();
+void get_ms(unsigned long *timestamp);
+
 
 #endif /* FEEDBACK_H_ */

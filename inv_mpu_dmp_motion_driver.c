@@ -23,6 +23,7 @@
 #include "inv_mpu_dmp_motion_driver.h"
 #include "dmpKey.h"
 #include "dmpmap.h"
+#include "Feedback.h"
 
 
 
@@ -34,7 +35,21 @@
  * delay_ms(unsigned long num_ms)
  * get_ms(unsigned long *count)
  */
-#if defined MOTION_DRIVER_TARGET_MSP430
+#if defined ATMEGA328
+#include "i2c_master.h"
+#include <util/delay.h>
+#include "SPI.h"
+#include "UART.h"
+#include "Feedback.h"
+#define i2c_write	i2c_writeReg
+#define i2c_read	i2c_readReg
+#define delay_ms	_delay_ms
+#define _NOP() do { __asm__ __volatile__ ("nop"); } while (0)
+#define __no_operation _NOP
+#define log_e uart_puts
+#define log_i uart_puts
+
+#elif defined MOTION_DRIVER_TARGET_MSP430
 #include "msp430.h"
 #include "msp430_clock.h"
 #define delay_ms    msp430_delay_ms

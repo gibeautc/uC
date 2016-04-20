@@ -1,14 +1,12 @@
-
 //:UART Functions used for writing to a bluetooth module
-
-
-
-
 //UART Functions 
 //Roger Traylor 11.l6.11
 //For controlling the UART and sending debug data to a terminal
 //as an aid in debugging.
-#define F_CPU 8000000UL
+#ifndef F_CPU
+#define F_CPU 8000000
+#endif
+
 #include <avr/io.h>
 #include <stdlib.h>
 #include <avr/pgmspace.h>
