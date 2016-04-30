@@ -24,6 +24,7 @@
 #include <math.h>
 #include "inv_mpu.h"
 #include "dmpkey.h"
+#include "SPI.h"
 
 
 /* The following functions must be defined for this platform:
@@ -39,13 +40,13 @@
  * min(int a, int b)
  */
 #if defined ATMEGA328
-#include "i2c_master.h"
+#include "SPI.h"
 #include <util/delay.h>
 #include "SPI.h"
 #include "UART.h"
 #include "Feedback.h"
-#define i2c_write	i2c_writeReg
-#define i2c_read	i2c_readReg	
+#define i2c_write	spi_writeRegs
+#define i2c_read	spi_readRegs
 #define delay_ms	_delay_ms
 #define min(a,b) ((a<b)?a:b)
 #define log_e(...)   do {} while (0)
@@ -504,7 +505,7 @@ const struct gyro_reg_s reg = {
 #endif
 };
 const struct hw_s hw = {
-    .addr           = 0x68,
+    .addr           = sensor1_cs,
     .max_fifo       = 1024,
     .num_reg        = 118,
     .temp_sens      = 340,
@@ -584,7 +585,7 @@ const struct gyro_reg_s reg = {
 #endif
 };
 const struct hw_s hw = {
-    .addr           = 0x68,
+    .addr           = sensor1_cs,
     .max_fifo       = 1024,
     .num_reg        = 128,
     .temp_sens      = 321,

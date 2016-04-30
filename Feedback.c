@@ -12,7 +12,7 @@
 #include <util/delay.h>
 #include "Feedback.h"
 
-volatile unsigned long count_t=0;
+
 
 void init_Feedback(void)
 {
@@ -110,11 +110,4 @@ void init_tcnt2()
 	TCCR2B=(1<<CS21)|(1<<CS20);//Normal mode prescale 32 should give a 1ms count
 }
 
-void get_ms(unsigned long *timestamp){
-	timestamp = count_t;
-}
 
-ISR(TIMER2_OVF_vect)
-{
-	count_t++;
-}

@@ -22,5 +22,8 @@ void init_SPI();
 char SPI_send(char chr);
 void select(uint8_t slvdevice);
 void deselect(uint8_t slvdevice);
-
+int spi_writeRegs(unsigned char sel, unsigned char reg_addr,
+unsigned char length, unsigned char const *data);
+int spi_readRegs(unsigned char sel, unsigned char reg_addr,
+unsigned char length, unsigned char *data);
 #endif /* SPI_H_ */

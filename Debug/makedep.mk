@@ -4,13 +4,13 @@
 
 Feedback.c
 
-i2c_master.c
-
 inv_mpu.c
 
 inv_mpu_dmp_motion_driver.c
 
 main.c
+
+MPU9250.c
 
 SPI.c
 

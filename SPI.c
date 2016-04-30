@@ -7,6 +7,8 @@
 #include <avr/io.h>
 #include "SPI.h"
 
+#define readbit 0x80
+
 void init_SPI()
 {
 	//DDRB houses SPI pins SCK-5 MOSI-3 MISO-4 used for programing
@@ -69,4 +71,69 @@ void deselect(uint8_t slvdevice){
 		}
 		return;
 	}
+}
+
+/*
+ * @ brief, spi write function for Invensense IC using MSP430
+ * @ parameters
+ * @ sel = this is the handle, used to be
+ *   just for compatibility with I2C and can be used ofr
+ *   chip select if needed.
+ * @ reg_addr, the register address of the chip
+ * @ length, length of the data to be written, assuming
+ *   auto increment of the register address by the chip
+ *   parameter data. ;
+ * @ data, data pointer where the data is written to reg addr
+ *   and sequentially hence forth if greater than 1
+ * @ return, success or failure
+ */
+int spi_writeRegs(unsigned char sel, unsigned char reg_addr,
+		unsigned char length, unsigned char const *data) {
+	uint8_t i;
+	select(sel);
+	
+	SPDR=reg_addr;
+	while(bit_is_clear(SPSR,SPIF)){}
+	for(i=0; i<length; i++)
+	{
+		SPDR=data[i];
+		SPDR=0xFF;
+		while(bit_is_clear(SPSR,SPIF)){};
+	}
+	deselect(sel);
+	return 0;
+}
+		
+/*
+ * @ brief, spi read function for Invensense IC using MSP430
+ * @ parameters
+ * @ sel = this is the handle, used to be
+ *   just for compatibility with I2C and can be used ofr
+ *   chip select if needed.
+ * @ reg_addr, the register address of the chip
+ * @ length, length of the data to be read, assuming
+ *   auto increment of the register address by the chip
+ *   parameter data. ;
+ * @ data, data pointer where the data is read from reg addr
+ *   and sequentially hence forth if greater than 1
+ * @ return, success or failure
+ */
+int spi_readRegs(unsigned char sel, unsigned char reg_addr,
+		unsigned char length, unsigned char *data) {
+	int i=0;
+	
+	select(sel);
+	
+	SPDR=(reg_addr | readbit);
+	while(bit_is_clear(SPSR,SPIF)){};
+	SPDR=0xFF;
+	while(bit_is_clear(SPSR,SPIF)){};
+	for(i=0; i<length; i++)
+	{
+		data[i]=SPDR;
+		SPDR=0xFF;
+		while(bit_is_clear(SPSR,SPIF)){};
+	}
+	deselect(sel);
+	return 0;
 }
