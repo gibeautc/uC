@@ -11,6 +11,7 @@
 #include <stdlib.h>
 #include <avr/pgmspace.h>
 #include <util/delay.h>
+#include "UART.h"
 
 #define USART_BAUDRATE 38400
 

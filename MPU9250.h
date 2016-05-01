@@ -311,7 +311,7 @@ void SPIgetMag(short* data, unsigned char sel);
 #define MPU9250_DISABLE_XYZG_MASK       0x07
 
 //Magnetometer register maps
-#define MPU9250_MAG_ADDRESS             0x18
+#define MPU9250_MAG_ADDRESS             0x0C
 
 #define MPU9250_MAG_WIA                 0x00
 #define MPU9250_MAG_INFO                0x01

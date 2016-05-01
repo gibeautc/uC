@@ -10,14 +10,17 @@
 
 #include <avr/io.h>
 #include <util/delay.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <avr/interrupt.h>
-#include "inv_mpu.h"
-#include "inv_mpu_dmp_motion_driver.h"
+#include <math.h>
+#include <string.h>
 #include "MPU9250.h"
 #include "Feedback.h"
 #include "SPI.h"
 #include "UART.h"
+#include "asf.h"
+#define BUFSZ 128
 
 volatile unsigned long count_t=0;
 
@@ -29,10 +32,11 @@ ISR(TIMER2_OVF_vect)
 int main(void)
 {
 	_delay_ms(10);
-	int16_t ax=0,ay=0,az=0;
-	int16_t gx,gy,gz;
+	float ax,ay,az;
+	float gx,gy,gz;
+	float mx,my,mz;
 	short data[3];
-	char addL[10];
+	char buf[BUFSZ];
 	
 	init_Feedback();
 	init_SPI();
@@ -53,8 +57,32 @@ int main(void)
 		//mpu_get_accel_reg(data, NULL);
 		//uart_puts("\nAccel:::");
 		SPIgetAccel(data, sensor1_cs);
-				
+		ax = (float)data[0]*MPU9250A_4g_scale;
+		ay = (float)data[1]*MPU9250A_4g_scale;
+		az = (float)data[2]*MPU9250A_4g_scale;
 		
+		SPIgetGyro(data, sensor1_cs);
+		gx = (float)data[0]*MPU9250G_500dps_scale;
+		gy = (float)data[1]*MPU9250G_500dps_scale;
+		gz = (float)data[2]*MPU9250G_500dps_scale;
+		
+		SPIgetMag(data, sensor1_cs);
+		mx = (float)data[0]*MPU9250M_4800uT;
+		my = (float)data[1]*MPU9250M_4800uT;
+		mz = (float)data[2]*MPU9250M_4800uT;
+		
+		memset(buf, 0, BUFSZ);
+		snprintf(buf, BUFSZ, "*HX%luY%f,X%luY%f,X%luY%f*\n", count_t, ax, count_t, ay, count_t, az);
+		uart_puts(buf);
+		
+		memset(buf, 0, BUFSZ);
+		snprintf(buf, BUFSZ, "*JX%luY%f,X%luY%f,X%luY%f*\n", count_t, gx, count_t, gy, count_t, gz);
+		uart_puts(buf);
+		
+		memset(buf, 0, BUFSZ);
+		snprintf(buf, BUFSZ, "*KX%luY%f,X%luY%f,X%luY%f*\n", count_t, mx, count_t, my, count_t, mz);
+		uart_puts(buf);
+		/*
 		uart_puts("*HX");
 		itoa(count_t,addL,10);
 		uart_puts(addL);
@@ -62,7 +90,8 @@ int main(void)
 		itoa((int)data[0],addL,10);
 		uart_puts(addL);
 		uart_puts("*");
-		
+		*/
+		/*
 		uart_puts("*JX");
 		itoa(count_t,addL,10);
 		uart_puts(addL);
@@ -78,6 +107,7 @@ int main(void)
 		itoa((int)data[2],addL,10);
 		uart_puts(addL);
 		uart_puts("*");
+		*/
 		/*
 		itoa((int)data[1],addL,10);
 		uart_puts(" Y: ");

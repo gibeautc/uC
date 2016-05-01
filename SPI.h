@@ -18,7 +18,7 @@
 #define set_input(portdir,pin) portdir &= ~(1<<pin)
 #define set_output(portdir,pin) portdir |= (1<<pin)
 
-void init_SPI();
+void init_SPI(void);
 char SPI_send(char chr);
 void select(uint8_t slvdevice);
 void deselect(uint8_t slvdevice);

@@ -4,15 +4,13 @@
 
 Feedback.c
 
-inv_mpu.c
-
-inv_mpu_dmp_motion_driver.c
-
 main.c
 
 MPU9250.c
 
 SPI.c
+
+src\ASF\common\boards\user_board\init.c
 
 UART.c
 

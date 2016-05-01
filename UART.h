@@ -6,5 +6,5 @@
 void uart_putc(char data);
 void uart_puts(char *str);
 void uart_puts_p(const char *str);
-void uart_init();
+void uart_init(void);
 char uart_getc(void);

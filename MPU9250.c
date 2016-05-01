@@ -6,11 +6,12 @@
  *  Author: Kody Conrad
  */
 #include <stdint.h>
+#include <util/delay.h>
 #include "MPU9250.h"
 #include "SPI.h"
 #include <avr/io.h>
 #include <math.h>
-#define readbit 0x80
+#define READ_FLAG   0x80
 
 int16_t AG_SelfTest[6]; //Holds the self test results for accelerometer/Gyro
 int16_t magCalib[3]={0,0,0}, magBias[3]={0,0,0};
@@ -18,6 +19,7 @@ int16_t accBias[3]={0,0,0}, gyroBias[3]={0,0,0};
 
 void SPIinit_MPU(unsigned char sel, unsigned char A_range, unsigned char G_range){
 	unsigned char data[6];
+	//uint8_t i;
 	
 	data[0] = 0x80;
 	spi_writeRegs(sel, MPU9250_PWR_MGMT_1, 1, data);
@@ -35,20 +37,33 @@ void SPIinit_MPU(unsigned char sel, unsigned char A_range, unsigned char G_range
 	spi_writeRegs(sel, MPU9250_ACCEL_CONFIG, 1, data);
 	data[0] = 0x09;
 	spi_writeRegs(sel, MPU9250_ACCEL_CONFIG2, 1, data);
-	data[0] = 0x30;
-	spi_writeRegs(sel, 0x37, 1, data);
+	/*data[0] = 0x02;
+	spi_writeRegs(sel, MPU9250_INT_PIN_CFG, 1, data);
+	data[0] = 0X01;
+	spi_writeRegs(sel, MPU9250_MAG_CNTL2, 1, data);
+	data[0] = 0X12;
+	spi_writeRegs(sel, MPU9250_MAG_CNTL1, 1, data);
+	data[0] = 0X08;
+	spi_writeRegs(sel, MPU9250_I2C_MST_CTRL, 1, data);*/
+	
 	data[0] = 0x20;
-	spi_writeRegs(sel, 0x6A, 1, data);
+	spi_writeRegs(sel, MPU9250_USER_CTRL, 1, data);
 	data[0] = 0x0D;
-	spi_writeRegs(sel, 0x24, 1, data);
+	spi_writeRegs(sel, MPU9250_I2C_MST_CTRL, 1, data);
 	data[0] = MPU9250_MAG_ADDRESS;
-	spi_writeRegs(sel, 0x25, 1, data);
+	spi_writeRegs(sel, MPU9250_I2C_SLV0_ADDR, 1, data);
 	data[0] = MPU9250_MAG_CNTL2;
-	spi_writeRegs(sel, 0x26, 1, data);
-	data[0] = 0x01;
-	spi_writeRegs(sel, 0x63, 1, data);
-	data[0] = 0x81;
-	spi_writeRegs(sel, 0x27, 1, data);
+	spi_writeRegs(sel, MPU9250_I2C_SLV0_REG, 1, data);
+	data[0] = 0X01;
+	spi_writeRegs(sel, MPU9250_I2C_SLV0_DO, 1, data);
+	data[0] = 0X81;
+	spi_writeRegs(sel, MPU9250_I2C_SLV0_CTRL, 1, data);
+	data[0] = MPU9250_MAG_CNTL1;
+	spi_writeRegs(sel, MPU9250_I2C_SLV0_REG, 1, data);
+	data[0] = 0X12;
+	spi_writeRegs(sel, MPU9250_I2C_SLV0_DO, 1, data);
+	data[0] = 0X81;
+	spi_writeRegs(sel, MPU9250_I2C_SLV0_CTRL, 1, data);
 	
 	return;
 }
@@ -67,7 +82,7 @@ void SPIgetAccel(short* data, unsigned char sel){
 void SPIgetGyro(short* data, unsigned char sel){
 	uint8_t GyroData[6];
 	
-	spi_readRegs(sel, MPU9250_ACCEL_XOUT_H, 6, GyroData);
+	spi_readRegs(sel, MPU9250_GYRO_XOUT_H, 6, GyroData);
 	
 	data[0] = (((int16_t)GyroData[0]) << 8) | GyroData[1];
 	data[1] = (((int16_t)GyroData[2]) << 8) | GyroData[3];
@@ -76,25 +91,37 @@ void SPIgetGyro(short* data, unsigned char sel){
 }
 
 void SPIgetMag(short* data, unsigned char sel){
-	
-uint8_t MagData[6];
+//uint8_t ST1[2];
+uint8_t MagData[7];
 
-//If problems occur possibly look at changing ST1[1] -> ST1 and then using readMagReg(MPU9250_MAG_ST1, 1, &ST1)
-//do
-//{//
-//	readMagReg(MPU9250_MAG_ST1, 1, ST1); //Looking for data ready
-//}
-//while (!(ST1[0]&0x01));
+MagData[0]=MPU9250_MAG_ADDRESS|READ_FLAG;
+spi_writeRegs(sel, MPU9250_I2C_SLV0_ADDR, 1, MagData); //Set the I2C slave addres of AK8963 and set for read.
+MagData[0]=MPU9250_MAG_XOUT_L;
+spi_writeRegs(sel, MPU9250_I2C_SLV0_REG, 1, MagData); //I2C slave 0 register address from where to begin data transfer
+MagData[0]=0x87;
+spi_writeRegs(sel, MPU9250_I2C_SLV0_CTRL, 1, MagData);
 
-// Read magnetometer data
-
-spi_readRegs(MPU9250_MAG_ADDRESS, MPU9250_MAG_XOUT_L, 6, MagData);
+_delay_ms(1);
+spi_readRegs(sel, MPU9250_EXT_SENS_DATA_00, 7, MagData);
 
 data[0] = (((int16_t)MagData[1]) << 8) | MagData[0];
 data[1] = (((int16_t)MagData[3]) << 8) | MagData[2];
 data[2] = (((int16_t)MagData[5]) << 8) | MagData[4];
 }
 
-void mpu_AG_Calibration(){
 
+int magwhoami(uint8_t sel){
+	unsigned char response[3];
+	unsigned char data[3];
+	data[0] = MPU9250_MAG_ADDRESS|READ_FLAG;
+	spi_writeRegs(sel, MPU9250_I2C_SLV0_ADDR, 1, data);
+	data[0] = MPU9250_MAG_WIA;
+	spi_writeRegs(sel, MPU9250_I2C_SLV0_REG, 1, data);
+	data[0] = 0x81;
+	spi_writeRegs(sel, MPU9250_I2C_SLV0_CTRL, 1, data);
+	
+	data[0]=0x00;
+	spi_writeRegs(sel, MPU9250_EXT_SENS_DATA_00|READ_FLAG, data)
+	
+	
 }

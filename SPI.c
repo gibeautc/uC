@@ -9,7 +9,7 @@
 
 #define readbit 0x80
 
-void init_SPI()
+void init_SPI(void)
 {
 	//DDRB houses SPI pins SCK-5 MOSI-3 MISO-4 used for programing
 	DDRB|=(1<<5)|(1<<3)|(0<<4)|(1<<sensor1_cs)|(1<<1)|(1<<sensor2_cs);
