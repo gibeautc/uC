@@ -8,6 +8,7 @@ void SPIinit_MPU(unsigned char sel, unsigned char A_range, unsigned char G_range
 void SPIgetAccel(short* data, unsigned char sel);
 void SPIgetGyro(short* data, unsigned char sel);
 void SPIgetMag(short* data, unsigned char sel);
+int magwhoami(uint8_t sel);
 
 //MPU9250 Register map
 #define MPU9250_DEFAULT_ADDRESS         0xD1

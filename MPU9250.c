@@ -121,7 +121,8 @@ int magwhoami(uint8_t sel){
 	spi_writeRegs(sel, MPU9250_I2C_SLV0_CTRL, 1, data);
 	
 	data[0]=0x00;
-	spi_writeRegs(sel, MPU9250_EXT_SENS_DATA_00|READ_FLAG, data)
+	spi_writeRegs(sel, MPU9250_EXT_SENS_DATA_00|READ_FLAG, 1, data);
 	
-	
+	//spi_readRegs(sel, MPU9250)
+	return 0;
 }
