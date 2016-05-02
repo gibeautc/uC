@@ -74,20 +74,6 @@ void deselect(uint8_t slvdevice){
 	}
 }
 
-/*
- * @ brief, spi write function for Invensense IC using MSP430
- * @ parameters
- * @ sel = this is the handle, used to be
- *   just for compatibility with I2C and can be used ofr
- *   chip select if needed.
- * @ reg_addr, the register address of the chip
- * @ length, length of the data to be written, assuming
- *   auto increment of the register address by the chip
- *   parameter data. ;
- * @ data, data pointer where the data is written to reg addr
- *   and sequentially hence forth if greater than 1
- * @ return, success or failure
- */
 int spi_writeRegs(unsigned char sel, unsigned char reg_addr,
 		unsigned char length, unsigned char const *data) {
 	uint8_t i;
@@ -102,6 +88,7 @@ int spi_writeRegs(unsigned char sel, unsigned char reg_addr,
 		SPDR=0xFF;
 	}
 	deselect(sel);
+	_delay_us(10);
 	return 0;
 }
 
@@ -114,22 +101,7 @@ unsigned int spi_writeReg(unsigned char sel, unsigned char reg_addr, unsigned ch
 	_delay_us(50);
 	return temp_val;
 }
-	
-		
-/*
- * @ brief, spi read function for Invensense IC using MSP430
- * @ parameters
- * @ sel = this is the handle, used to be
- *   just for compatibility with I2C and can be used ofr
- *   chip select if needed.
- * @ reg_addr, the register address of the chip
- * @ length, length of the data to be read, assuming
- *   auto increment of the register address by the chip
- *   parameter data. ;
- * @ data, data pointer where the data is read from reg addr
- *   and sequentially hence forth if greater than 1
- * @ return, success or failure
- */
+
 void spi_readRegs(unsigned char sel, unsigned char reg_addr,
 		unsigned char length, unsigned char *data) {
 	unsigned int  i = 0;
