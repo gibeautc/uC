@@ -32,9 +32,6 @@ ISR(TIMER2_OVF_vect)
 int main(void)
 {
 	_delay_ms(10);
-	float ax,ay,az;
-	float gx,gy,gz;
-	float mx,my,mz;
 	uint8_t response[4];
 	char buf[BUFSZ];
 	
@@ -48,6 +45,7 @@ int main(void)
 	//mpu_init(NULL);
 	
 	SPIinit_MPU(sensor1_cs, 1, BITS_DLPF_CFG_188HZ);
+	
 	//Initializations Successful
 	LED(G_LED, Pulse_3);
 	
@@ -59,6 +57,8 @@ int main(void)
 	_delay_ms(10);
 	response[1] = AK8963_whoami(sensor1_cs);
 	_delay_ms(10);
+	
+	LED(G_LED, Pulse_Long);
 	
 	//OUTPUT: WHOAMI Results & GYRO/ACC Scale
 	memset(buf, 0, BUFSZ);
@@ -77,31 +77,18 @@ int main(void)
 		snprintf(buf, BUFSZ, "*TTemperature=%f*\n",	Temp);
 		uart_puts(buf);
 		
-		ax = Accel_data[0];
-		ay = Accel_data[1];
-		az = Accel_data[2];
-		
-		gx = Gyro_data[0];
-		gy = Gyro_data[1];
-		gz = Gyro_data[2];
-		
-		mx = Mag_data[0];
-		my = Mag_data[1];
-		mz = Mag_data[2];
-		
 		memset(buf, 0, BUFSZ);
-		snprintf(buf, BUFSZ, "*HX%luY%f,X%luY%f,X%luY%f*\n", count_t, ax, count_t, ay, count_t, az);
+		snprintf(buf, BUFSZ, "*HX%luY%f,X%luY%f,X%luY%f*\n", count_t, Accel_data[0], count_t, Accel_data[1], count_t, Accel_data[2]);
 		uart_puts(buf);
 		
 		memset(buf, 0, BUFSZ);
-		snprintf(buf, BUFSZ, "*JX%luY%f,X%luY%f,X%luY%f*\n", count_t, gx, count_t, gy, count_t, gz);
+		snprintf(buf, BUFSZ, "*JX%luY%f,X%luY%f,X%luY%f*\n", count_t, Gyro_data[0], count_t, Gyro_data[1], count_t, Gyro_data[2]);
 		uart_puts(buf);
 		
 		memset(buf, 0, BUFSZ);
-		snprintf(buf, BUFSZ, "*KX%luY%f,X%luY%f,X%luY%f*\n", count_t, mx, count_t, my, count_t, mz);
+		snprintf(buf, BUFSZ, "*KX%luY%f,X%luY%f,X%luY%f*\n", count_t, Mag_data[0], count_t, Mag_data[1], count_t, Mag_data[2]);
 		uart_puts(buf);
 		_delay_ms(30);
     }
 	return 0;
 }
-
