@@ -5,6 +5,7 @@
  *  Author: gbone
  */ 
 #include <avr/io.h>
+#include <util/delay.h>
 #include "SPI.h"
 
 #define readbit 0x80
@@ -18,7 +19,7 @@ void init_SPI(void)
 	DDRC |=(1<<sram_cs);//Sets up chip select for sram
 	PORTC|=(1<<sram_cs);//deselect
 	SPCR=0;
-	SPCR=(1<<SPE)|(1<<MSTR)|(1<<SPR0);  //master mode sets 2x speed
+	SPCR=(1<<SPE)|(1<<MSTR)|(0<<SPR1)|(1<<SPR0)|(0<<DORD)|(1<<CPOL)|(1<<CPHA);  //master mode sets 2x speed
 	//(1<<SPR0);
 	//SPSR=(1<<SPI2X);
 	SPSR=0;
@@ -97,12 +98,23 @@ int spi_writeRegs(unsigned char sel, unsigned char reg_addr,
 	for(i=0; i<length; i++)
 	{
 		SPDR=data[i];
-		SPDR=0xFF;
 		while(bit_is_clear(SPSR,SPIF)){};
+		SPDR=0xFF;
 	}
 	deselect(sel);
 	return 0;
 }
+
+unsigned int spi_writeReg(unsigned char sel, unsigned char reg_addr, unsigned char data){
+	unsigned int temp_val;
+	select(sel);
+	transfer(reg_addr);
+	temp_val=transfer(data);
+	deselect(sel);
+	_delay_us(50);
+	return temp_val;
+}
+	
 		
 /*
  * @ brief, spi read function for Invensense IC using MSP430
@@ -118,22 +130,14 @@ int spi_writeRegs(unsigned char sel, unsigned char reg_addr,
  *   and sequentially hence forth if greater than 1
  * @ return, success or failure
  */
-int spi_readRegs(unsigned char sel, unsigned char reg_addr,
+void spi_readRegs(unsigned char sel, unsigned char reg_addr,
 		unsigned char length, unsigned char *data) {
-	int i=0;
+	unsigned int  i = 0;
 	
 	select(sel);
-	
-	SPDR=(reg_addr | readbit);
-	while(bit_is_clear(SPSR,SPIF)){};
-	SPDR=0xFF;
-	while(bit_is_clear(SPSR,SPIF)){};
-	for(i=0; i<length; i++)
-	{
-		data[i]=SPDR;
-		SPDR=0xFF;
-		while(bit_is_clear(SPSR,SPIF)){};
-	}
+	transfer(reg_addr | readbit);
+	for(i=0; i<length; i++) data[i] = transfer(0x00);
 	deselect(sel);
-	return 0;
+	_delay_us(50);
 }
+

@@ -5,10 +5,18 @@
 #include <avr/pgmspace.h>
 
 void SPIinit_MPU(unsigned char sel, unsigned char A_range, unsigned char G_range);
+void I2Cinit_MPU(unsigned char addr, unsigned char A_range, unsigned char G_range);
 void SPIgetAccel(short* data, unsigned char sel);
 void SPIgetGyro(short* data, unsigned char sel);
 void SPIgetMag(short* data, unsigned char sel);
-int magwhoami(uint8_t sel);
+int I2CgetAccel(unsigned char addr, short *data);
+int I2CgetGyro(unsigned char addr, short *data);
+uint8_t AK8963_whoami(unsigned char sel);
+unsigned int whoami(unsigned char sel);
+unsigned int set_acc_scale(unsigned char sel, int scale);
+unsigned int set_gyro_scale(unsigned char sel, int scale);
+void readDatShit(unsigned char sel);
+
 
 //MPU9250 Register map
 #define MPU9250_DEFAULT_ADDRESS         0xD1
@@ -142,21 +150,21 @@ int magwhoami(uint8_t sel);
 #define MPU9250_GYRO_FS_SEL_MASK        0x18
 #define MPU9250_FCHOICE_B_MASK          0x03
 
-#define MPU9250_GYRO_FULL_SCALE_250DPS  0x00//0
-#define MPU9250_GYRO_FULL_SCALE_500DPS  0x08//1
-#define MPU9250_GYRO_FULL_SCALE_1000DPS 0x10//2
-#define MPU9250_GYRO_FULL_SCALE_2000DPS 0x18//3
-
 //ACCEL_CONFIG register masks
 #define MPU9250_AX_ST_EN_MASK           0x80
 #define MPU9250_AY_ST_EN_MASK           0x40
 #define MPU9250_AZ_ST_EN_MASK           0x20
 #define MPU9250_ACCEL_FS_SEL_MASK       0x18
 
-#define MPU9250_FULL_SCALE_2G           0x00//0
-#define MPU9250_FULL_SCALE_4G           0x08//1
-#define MPU9250_FULL_SCALE_8G           0x10//2
-#define MPU9250_FULL_SCALE_16G          0x18//3
+#define BITS_FS_250DPS              0x00
+#define BITS_FS_500DPS              0x08
+#define BITS_FS_1000DPS             0x10
+#define BITS_FS_2000DPS             0x18
+
+#define BITS_FS_2G                  0x00
+#define BITS_FS_4G                  0x08
+#define BITS_FS_8G                  0x10
+#define BITS_FS_16G                 0x18
 
 //ACCEL_CONFIG_2 register masks
 #define MPU9250_ACCEL_FCHOICE_B_MASK    0xC0
@@ -352,5 +360,56 @@ int magwhoami(uint8_t sel);
  
 #define MPU9250M_4800uT   ((float)0.6f)            // 0.6 uT/LSB
 #define Magnetometer_Sensitivity_Scale_Factor ((float)0.15f) 
+
+#define BIT_I2C_MST_VDDIO   (0x80)
+#define BIT_FIFO_EN         (0x40)
+#define BIT_DMP_EN          (0x80)
+#define BIT_FIFO_RST        (0x04)
+#define BIT_DMP_RST         (0x08)
+#define BIT_FIFO_OVERFLOW   (0x10)
+#define BIT_DATA_RDY_EN     (0x01)
+#define BIT_DMP_INT_EN      (0x02)
+#define BIT_MOT_INT_EN      (0x40)
+#define BITS_FSR            (0x18)
+#define BITS_LPF            (0x07)
+#define BITS_HPF            (0x07)
+#define BITS_CLK            (0x07)
+#define BIT_FIFO_SIZE_1024  (0x40)
+#define BIT_FIFO_SIZE_2048  (0x80)
+#define BIT_FIFO_SIZE_4096  (0xC0)
+#define BIT_RESET           (0x80)
+#define BIT_SLEEP           (0x40)
+#define BIT_S0_DELAY_EN     (0x01)
+#define BIT_S2_DELAY_EN     (0x04)
+#define BITS_SLAVE_LENGTH   (0x0F)
+#define BIT_SLAVE_BYTE_SW   (0x40)
+#define BIT_SLAVE_GROUP     (0x10)
+#define BIT_SLAVE_EN        (0x80)
+#define BIT_I2C_READ        (0x80)
+#define BITS_I2C_MASTER_DLY (0x1F)
+#define BIT_AUX_IF_EN       (0x20)
+#define BIT_ACTL            (0x80)
+#define BIT_LATCH_EN        (0x20)
+#define BIT_ANY_RD_CLR      (0x10)
+#define BIT_BYPASS_EN       (0x02)
+#define BITS_WOM_EN         (0xC0)
+#define BIT_LPA_CYCLE       (0x20)
+#define BIT_STBY_XA         (0x20)
+#define BIT_STBY_YA         (0x10)
+#define BIT_STBY_ZA         (0x08)
+#define BIT_STBY_XG         (0x04)
+#define BIT_STBY_YG         (0x02)
+#define BIT_STBY_ZG         (0x01)
+#define BIT_STBY_XYZA       (BIT_STBY_XA | BIT_STBY_YA | BIT_STBY_ZA)
+#define BIT_STBY_XYZG       (BIT_STBY_XG | BIT_STBY_YG | BIT_STBY_ZG)
+
+float Accel_data[3];
+float Temp;
+float Gyro_data[3];
+float Mag_data[3];
+
+float acc_divider;
+float gyro_divider;
+float mag_ASA;
 
 #endif /* _MPU9250_H_ */

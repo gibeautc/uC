@@ -51,6 +51,7 @@ SUBDIRS :=  \
 # Add inputs and outputs from these tool invocations to the build variables 
 C_SRCS +=  \
 ../Feedback.c \
+../i2c_master.c \
 ../main.c \
 ../MPU9250.c \
 ../SPI.c \
@@ -66,6 +67,7 @@ ASM_SRCS +=
 
 OBJS +=  \
 Feedback.o \
+i2c_master.o \
 main.o \
 MPU9250.o \
 SPI.o \
@@ -74,6 +76,7 @@ UART.o
 
 OBJS_AS_ARGS +=  \
 Feedback.o \
+i2c_master.o \
 main.o \
 MPU9250.o \
 SPI.o \
@@ -82,6 +85,7 @@ UART.o
 
 C_DEPS +=  \
 Feedback.d \
+i2c_master.d \
 main.d \
 MPU9250.d \
 SPI.d \
@@ -90,6 +94,7 @@ UART.d
 
 C_DEPS_AS_ARGS +=  \
 Feedback.d \
+i2c_master.d \
 main.d \
 MPU9250.d \
 SPI.d \
@@ -110,6 +115,8 @@ LINKER_SCRIPT_DEP+=
 
 
 # AVR32/GNU C Compiler
+
+
 
 
 

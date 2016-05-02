@@ -24,6 +24,15 @@ void select(uint8_t slvdevice);
 void deselect(uint8_t slvdevice);
 int spi_writeRegs(unsigned char sel, unsigned char reg_addr,
 unsigned char length, unsigned char const *data);
-int spi_readRegs(unsigned char sel, unsigned char reg_addr,
+unsigned int spi_writeReg(unsigned char sel, unsigned char reg_addr, unsigned char data);
+void spi_readRegs(unsigned char sel, unsigned char reg_addr,
 unsigned char length, unsigned char *data);
+
+inline static uint8_t transfer(uint8_t data){
+	SPDR=data;
+	
+	asm volatile("nop");
+	while(!(SPSR & _BV(SPIF)));
+	return SPDR;
+}
 #endif /* SPI_H_ */

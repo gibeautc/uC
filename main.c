@@ -36,6 +36,7 @@ int main(void)
 	float gx,gy,gz;
 	float mx,my,mz;
 	short data[3];
+	uint8_t response[3];
 	char buf[BUFSZ];
 	
 	init_Feedback();
@@ -44,32 +45,81 @@ int main(void)
 	init_tcnt2();
 	_delay_ms(10);
 	//mpu_init(NULL);
-	SPIinit_MPU(sensor1_cs, MPU9250_FULL_SCALE_4G, MPU9250_GYRO_FULL_SCALE_500DPS);
+	SPIinit_MPU(sensor1_cs, BITS_FS_4G, BITS_FS_500DPS);
 	sei();
 	
 	//Initializations Successful
 	LED(G_LED, Pulse_3);
+	response[0] = whoami(sensor1_cs);
+	response[1] = AK8963_whoami(sensor1_cs);
+	
+	memset(buf, 0, BUFSZ);
+	snprintf(buf, BUFSZ, "\nWhoAmI Value: %d\n\n", response[0]);
+	uart_puts(buf);
+	
+	memset(buf, 0, BUFSZ);
+	snprintf(buf, BUFSZ, "*TMPU=%d  AK=%d*", response[0], response[1]);
+	uart_puts(buf);
+	
+	if(response[0] == 0)
+	{
+		snprintf(buf, BUFSZ, "*BR255G0B0*");
+		uart_puts(buf);
+	}
+	else if (response[0] == 113)
+	{
+		snprintf(buf, BUFSZ, "*BR0G255B0*");
+		uart_puts(buf);
+	}
+	else
+	{
+		snprintf(buf, BUFSZ, "*BR0G0B255*");
+		uart_puts(buf);
+	}
+	
+	memset(buf, 0, BUFSZ);
+	snprintf(buf, BUFSZ, "\nMAG WhoAmI Value: %d\n\n", response[1]);
+	uart_puts(buf);
+	if(response[1] == 0)
+	{
+		snprintf(buf, BUFSZ, "*LR255G0B0*");
+		uart_puts(buf);
+	}
+	else if (response[1] == 72)
+	{
+		snprintf(buf, BUFSZ, "*LR0G255B0*");
+		uart_puts(buf);
+	}
+	else
+	{
+		snprintf(buf, BUFSZ, "*LR0G0B255*");
+		uart_puts(buf);
+	}
+	_delay_ms(5000);
 	
     while (1) 
     {
+		
 		if(count_t>20000)
 			count_t=0;
+			
+		//readDatShit(sensor1_cs);
 		//mpu_get_accel_reg(data, NULL);
 		//uart_puts("\nAccel:::");
 		SPIgetAccel(data, sensor1_cs);
-		ax = (float)data[0]*MPU9250A_4g_scale;
-		ay = (float)data[1]*MPU9250A_4g_scale;
-		az = (float)data[2]*MPU9250A_4g_scale;
+		ax = Accel_data[0];//*MPU9250A_16g_scale;
+		ay = Accel_data[1];//*MPU9250A_16g_scale;
+		az = Accel_data[2];//*MPU9250A_16g_scale;
 		
 		SPIgetGyro(data, sensor1_cs);
-		gx = (float)data[0]*MPU9250G_500dps_scale;
-		gy = (float)data[1]*MPU9250G_500dps_scale;
-		gz = (float)data[2]*MPU9250G_500dps_scale;
+		gx = Gyro_data[0]*MPU9250G_500dps_scale;
+		gy = Gyro_data[1]*MPU9250G_500dps_scale;
+		gz = Gyro_data[2]*MPU9250G_500dps_scale;
 		
 		SPIgetMag(data, sensor1_cs);
-		mx = (float)data[0]*MPU9250M_4800uT;
-		my = (float)data[1]*MPU9250M_4800uT;
-		mz = (float)data[2]*MPU9250M_4800uT;
+		mx = Mag_data[0];
+		my = Mag_data[1];
+		mz = Mag_data[2];
 		
 		memset(buf, 0, BUFSZ);
 		snprintf(buf, BUFSZ, "*HX%luY%f,X%luY%f,X%luY%f*\n", count_t, ax, count_t, ay, count_t, az);
@@ -82,80 +132,7 @@ int main(void)
 		memset(buf, 0, BUFSZ);
 		snprintf(buf, BUFSZ, "*KX%luY%f,X%luY%f,X%luY%f*\n", count_t, mx, count_t, my, count_t, mz);
 		uart_puts(buf);
-		/*
-		uart_puts("*HX");
-		itoa(count_t,addL,10);
-		uart_puts(addL);
-		uart_puts("Y");
-		itoa((int)data[0],addL,10);
-		uart_puts(addL);
-		uart_puts("*");
-		*/
-		/*
-		uart_puts("*JX");
-		itoa(count_t,addL,10);
-		uart_puts(addL);
-		uart_puts("Y");
-		itoa((int)data[1],addL,10);
-		uart_puts(addL);
-		uart_puts("*");
 		
-		uart_puts("*KX");
-		itoa(count_t,addL,10);
-		uart_puts(addL);
-		uart_puts("Y");
-		itoa((int)data[2],addL,10);
-		uart_puts(addL);
-		uart_puts("*");
-		*/
-		/*
-		itoa((int)data[1],addL,10);
-		uart_puts(" Y: ");
-		uart_puts(addL);
-		
-		itoa((int)data[2],addL,10);
-		uart_puts(" Z: ");
-		uart_puts(addL);
-		
-		
-		_delay_ms(100);
-		uart_puts("GYRO:::");
-		//mpu_get_accel_reg(data, NULL);
-		SPIgetGyro(data, sensor1_cs);
-		
-		itoa((int)data[0],addL,10);
-		uart_puts("X: ");
-		uart_puts(addL);
-		
-		itoa((int)data[1],addL,10);
-		uart_puts(" Y: ");
-		uart_puts(addL);
-		
-		itoa((int)data[2],addL,10);
-		uart_puts(" Z: ");
-		uart_puts(addL);
-		
-		//MAG
-		_delay_ms(100);
-		uart_puts("MAG:::");
-		//mpu_get_accel_reg(data, NULL);
-		SPIgetGyro(data, sensor1_cs);
-		
-		itoa((int)data[0],addL,10);
-		uart_puts("X: ");
-		uart_puts(addL);
-		
-		itoa((int)data[1],addL,10);
-		uart_puts(" Y: ");
-		uart_puts(addL);
-		
-		itoa((int)data[2],addL,10);
-		uart_puts(" Z: ");
-		uart_puts(addL);
-		
-		uart_puts("\n\n\n\n");
-		_delay_ms(1000);
-		*/
 		
     }
 	return 0;
