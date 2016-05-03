@@ -81,7 +81,7 @@
   <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
     <ToolchainSettings>
       <AvrGccCpp>
-  <avrgcc.common.Device>-mmcu=atmega328p -B "%24(PackRepoDir)\atmel\ATmega_DFP\1.0.98\gcc\dev\atmega328p"</avrgcc.common.Device>
+  <avrgcc.common.Device>-mmcu=atmega328p -B "%24(PackRepoDir)\atmel\ATmega_DFP\1.0.90\gcc\dev\atmega328p"</avrgcc.common.Device>
   <avrgcc.common.outputfiles.hex>True</avrgcc.common.outputfiles.hex>
   <avrgcc.common.outputfiles.lss>True</avrgcc.common.outputfiles.lss>
   <avrgcc.common.outputfiles.eep>True</avrgcc.common.outputfiles.eep>
@@ -95,7 +95,6 @@
   </avrgcc.compiler.symbols.DefSymbols>
   <avrgcc.compiler.directories.IncludePaths>
     <ListValues>
-      <Value>%24(PackRepoDir)\atmel\ATmega_DFP\1.0.98\include</Value>
       <Value>../common/applications/user_application/user_board/config</Value>
       <Value>../src/config</Value>
       <Value>../src/ASF/common/boards</Value>
@@ -104,6 +103,7 @@
       <Value>../src/ASF/mega/utils/preprocessor</Value>
       <Value>../src</Value>
       <Value>../src/ASF/common/boards/user_board</Value>
+      <Value>%24(PackRepoDir)\atmel\ATmega_DFP\1.0.90\include</Value>
     </ListValues>
   </avrgcc.compiler.directories.IncludePaths>
   <avrgcc.compiler.optimization.level>Optimize for size (-Os)</avrgcc.compiler.optimization.level>
@@ -122,7 +122,6 @@
   </avrgcccpp.compiler.symbols.DefSymbols>
   <avrgcccpp.compiler.directories.IncludePaths>
     <ListValues>
-      <Value>%24(PackRepoDir)\atmel\ATmega_DFP\1.0.98\include</Value>
       <Value>../common/applications/user_application/user_board/config</Value>
       <Value>../src/config</Value>
       <Value>../src/ASF/common/boards</Value>
@@ -131,6 +130,7 @@
       <Value>../src/ASF/mega/utils/preprocessor</Value>
       <Value>../src</Value>
       <Value>../src/ASF/common/boards/user_board</Value>
+      <Value>%24(PackRepoDir)\atmel\ATmega_DFP\1.0.90\include</Value>
     </ListValues>
   </avrgcccpp.compiler.directories.IncludePaths>
   <avrgcccpp.compiler.optimization.level>Optimize for size (-Os)</avrgcccpp.compiler.optimization.level>
@@ -162,7 +162,7 @@
   <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
     <ToolchainSettings>
       <AvrGccCpp>
-  <avrgcc.common.Device>-mmcu=atmega328p -B "%24(PackRepoDir)\atmel\ATmega_DFP\1.0.98\gcc\dev\atmega328p"</avrgcc.common.Device>
+  <avrgcc.common.Device>-mmcu=atmega328p -B "%24(PackRepoDir)\atmel\ATmega_DFP\1.0.90\gcc\dev\atmega328p"</avrgcc.common.Device>
   <avrgcc.common.outputfiles.hex>True</avrgcc.common.outputfiles.hex>
   <avrgcc.common.outputfiles.lss>True</avrgcc.common.outputfiles.lss>
   <avrgcc.common.outputfiles.eep>True</avrgcc.common.outputfiles.eep>
@@ -177,7 +177,6 @@
   </avrgcc.compiler.symbols.DefSymbols>
   <avrgcc.compiler.directories.IncludePaths>
     <ListValues>
-      <Value>%24(PackRepoDir)\atmel\ATmega_DFP\1.0.98\include</Value>
       <Value>../common/applications/user_application/user_board/config</Value>
       <Value>../src/config</Value>
       <Value>../src/ASF/common/boards</Value>
@@ -186,6 +185,7 @@
       <Value>../src/ASF/mega/utils/preprocessor</Value>
       <Value>../src</Value>
       <Value>../src/ASF/common/boards/user_board</Value>
+      <Value>%24(PackRepoDir)\atmel\ATmega_DFP\1.0.90\include</Value>
     </ListValues>
   </avrgcc.compiler.directories.IncludePaths>
   <avrgcc.compiler.optimization.level>Optimize (-O1)</avrgcc.compiler.optimization.level>
@@ -205,7 +205,6 @@
   </avrgcccpp.compiler.symbols.DefSymbols>
   <avrgcccpp.compiler.directories.IncludePaths>
     <ListValues>
-      <Value>%24(PackRepoDir)\atmel\ATmega_DFP\1.0.98\include</Value>
       <Value>../common/applications/user_application/user_board/config</Value>
       <Value>../src/config</Value>
       <Value>../src/ASF/common/boards</Value>
@@ -214,6 +213,7 @@
       <Value>../src/ASF/mega/utils/preprocessor</Value>
       <Value>../src</Value>
       <Value>../src/ASF/common/boards/user_board</Value>
+      <Value>%24(PackRepoDir)\atmel\ATmega_DFP\1.0.90\include</Value>
     </ListValues>
   </avrgcccpp.compiler.directories.IncludePaths>
   <avrgcccpp.compiler.optimization.level>Optimize (-O1)</avrgcccpp.compiler.optimization.level>

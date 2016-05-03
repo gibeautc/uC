@@ -93,7 +93,9 @@ void AK8963_calib_Magnetometer(unsigned char sel)
 	int i;
 	
 	spi_writeReg(sel, MPU9250_I2C_SLV4_ADDR,AK8963_I2C_ADDR|READ_FLAG); //Set the I2C slave address of AK8963 and set for read.
+	_delay_ms(10);
 	spi_writeReg(sel, MPU9250_I2C_SLV4_REG, AK8963_ASAX); //I2C slave 0 register address from where to begin data transfer
+	_delay_ms(10);
 	spi_writeReg(sel, MPU9250_I2C_SLV4_CTRL, 0x83); //Read 3 bytes from the magnetometer
 
 	_delay_us(100);
@@ -182,12 +184,14 @@ void read_all(unsigned char sel){
 	
 	//Send I2C command at first
 	spi_writeReg(sel, MPU9250_I2C_SLV0_ADDR, AK8963_I2C_ADDR|READ_FLAG); //Set the I2C slave addres of AK8963 and set for read.
+	_delay_ms(10);
 	spi_writeReg(sel, MPU9250_I2C_SLV0_REG, AK8963_HXL); //I2C slave 0 register address from where to begin data transfer
+	_delay_ms(10);
 	spi_writeReg(sel, MPU9250_I2C_SLV0_CTRL, 0x87); //Read 7 bytes from the magnetometer
 	//must start your read from AK8963A register 0x03 and read seven bytes so that upon read of ST2 register 0x09 the AK8963A will unlatch the data registers for the next measurement.
 	
 	//wait(0.001);
-	_delay_ms(1);
+	_delay_ms(10);
 	spi_readRegs(sel, MPU9250_ACCEL_XOUT_H, 21, response);
 	
 	//Get accelerometer value

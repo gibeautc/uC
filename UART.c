@@ -13,7 +13,7 @@
 #include <util/delay.h>
 #include "UART.h"
 
-#define USART_BAUDRATE 38400
+#define USART_BAUDRATE 115200
 
 //#define USART_BAUDRATE 460800
 
@@ -79,8 +79,11 @@ void uart_init(){
 //  UCSR0B |= (1<<RXEN0) | (1<<TXEN0) ;
 //async operation, no parity,  one stop bit, 8-bit characters
 UCSR0C |= (1<<UCSZ01) | (1<<UCSZ00);
-UBRR0H = (BAUDVALUE >>8 ); //load upper byte of the baud rate into UBRR 
-UBRR0L =  BAUDVALUE;       //load lower byte of the baud rate into UBRR 
+UCSR0A |=(1<<U2X0);
+//***UBRR0H = (BAUDVALUE >>8 ); //load upper byte of the baud rate into UBRR 
+//***UBRR0L =  BAUDVALUE;       //load lower byte of the baud rate into UBRR 
+UBRR0H = 0; //load upper byte of the baud rate into UBRR
+UBRR0L =8;
 //_delay_ms(1000);
 //char num[5];
 //uint8_t x;

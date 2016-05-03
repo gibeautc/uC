@@ -13,9 +13,10 @@
 void init_SPI(void)
 {
 	//DDRB houses SPI pins SCK-5 MOSI-3 MISO-4 used for programing
-	DDRB|=(1<<5)|(1<<3)|(0<<4)|(1<<sensor1_cs)|(1<<1)|(1<<sensor2_cs);
+	DDRB|=(1<<5)|(1<<3)|(0<<4)|(1<<sensor1_cs)|(1<<1)|(1<<sensor2_cs)|(1<<sensor3_cs);
 	deselect(sensor1_cs);
 	deselect(sensor2_cs);
+	deselect(sensor3_cs);
 	DDRC |=(1<<sram_cs);//Sets up chip select for sram
 	PORTC|=(1<<sram_cs);//deselect
 	SPCR=0;

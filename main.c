@@ -41,41 +41,61 @@ int main(void)
 	init_Feedback();
 	uart_init();
 	init_tcnt2();
-	_delay_ms(10);
-	//mpu_init(NULL);
 	
+	_delay_ms(10);
 	SPIinit_MPU(sensor1_cs, 1, BITS_DLPF_CFG_188HZ);
+	_delay_ms(10);
+	SPIinit_MPU(sensor2_cs, 1, BITS_DLPF_CFG_188HZ);
+	_delay_ms(10);
+	SPIinit_MPU(sensor3_cs, 1, BITS_DLPF_CFG_188HZ);
 	
 	//Initializations Successful
 	LED(G_LED, Pulse_3);
-	
-	response[0] = whoami(sensor1_cs);
+
 	_delay_ms(10);
 	response[2] = set_gyro_scale(sensor1_cs, BITS_FS_2000DPS);
 	_delay_ms(10);
 	response[3] = set_acc_scale(sensor1_cs, BITS_FS_16G);
 	_delay_ms(10);
-	response[1] = AK8963_whoami(sensor1_cs);
+	
+	response[2] = set_gyro_scale(sensor2_cs, BITS_FS_2000DPS);
 	_delay_ms(10);
+	response[3] = set_acc_scale(sensor2_cs, BITS_FS_16G); 
+	_delay_ms(10);
+	
+	response[2] = set_gyro_scale(sensor3_cs, BITS_FS_2000DPS);
+	_delay_ms(10);
+	response[3] = set_acc_scale(sensor3_cs, BITS_FS_16G);
+	_delay_ms(10);
+
+	uart_puts("*HC**JC**KC*");
 	
 	LED(G_LED, Pulse_Long);
 	
 	//OUTPUT: WHOAMI Results & GYRO/ACC Scale
-	memset(buf, 0, BUFSZ);
+	/*(memset(buf, 0, BUFSZ);
 	snprintf(buf, BUFSZ, "*TMPU9250 Addr=%02X  AK8963 Addr=%02X \n Gyro Scale=%d  Accel Scale=%d*\n\n", 
 		response[0], response[1], response[2], response[3]);
-	uart_puts(buf);
-	
-	_delay_ms(1);
+	uart_puts(buf);*/
+
 	AK8963_calib_Magnetometer(sensor1_cs);
-	_delay_ms(5000);
+	_delay_ms(10);
+	AK8963_calib_Magnetometer(sensor2_cs);
+	_delay_ms(10);
+	AK8963_calib_Magnetometer(sensor3_cs);
+	_delay_ms(10);
+	
+	
+	_delay_ms(2000);
 	
     while (1) 
     {
+		if(count_t >20000)
+			count_t=0;
 		_delay_ms(100);
-		read_all(sensor1_cs);
-		snprintf(buf, BUFSZ, "*TTemperature=%f*\n",	Temp);
-		uart_puts(buf);
+		read_all(sensor3_cs);
+		//snprintf(buf, BUFSZ, "*TTemperature=%f*\n",	Temp);
+		//uart_puts(buf);
 		
 		memset(buf, 0, BUFSZ);
 		snprintf(buf, BUFSZ, "*HX%luY%f,X%luY%f,X%luY%f*\n", count_t, Accel_data[0], count_t, Accel_data[1], count_t, Accel_data[2]);
