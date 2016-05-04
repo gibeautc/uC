@@ -12,6 +12,7 @@
 #include "i2c_master.h"
 #include <avr/io.h>
 #include <math.h>
+#include "POS_FUNCTIONS.h"
 
 	
 //unsigned char compass_addr, compass_sample_rate;
@@ -184,14 +185,15 @@ void read_all(unsigned char sel){
 	
 	//Send I2C command at first
 	spi_writeReg(sel, MPU9250_I2C_SLV0_ADDR, AK8963_I2C_ADDR|READ_FLAG); //Set the I2C slave addres of AK8963 and set for read.
-	_delay_ms(10);
+	_delay_ms(3);
 	spi_writeReg(sel, MPU9250_I2C_SLV0_REG, AK8963_HXL); //I2C slave 0 register address from where to begin data transfer
-	_delay_ms(10);
+	_delay_ms(3);
 	spi_writeReg(sel, MPU9250_I2C_SLV0_CTRL, 0x87); //Read 7 bytes from the magnetometer
 	//must start your read from AK8963A register 0x03 and read seven bytes so that upon read of ST2 register 0x09 the AK8963A will unlatch the data registers for the next measurement.
 	
 	//wait(0.001);
-	_delay_ms(10);
+	_delay_ms(2);
+
 	spi_readRegs(sel, MPU9250_ACCEL_XOUT_H, 21, response);
 	
 	//Get accelerometer value

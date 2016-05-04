@@ -10,6 +10,8 @@ main.c
 
 MPU9250.c
 
+POS_FUNCTIONS.c
+
 SPI.c
 
 src\ASF\common\boards\user_board\init.c

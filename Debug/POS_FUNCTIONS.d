@@ -1,4 +1,5 @@
-main.d main.o: .././main.c \
+POS_FUNCTIONS.d POS_FUNCTIONS.o: .././POS_FUNCTIONS.c \
+ .././POS_FUNCTIONS.h \
  c:\program\ files\ (x86)\atmel\studio\7.0\toolchain\avr8\avr8-gnu-toolchain\avr\include\avr\io.h \
  c:\program\ files\ (x86)\atmel\studio\7.0\toolchain\avr8\avr8-gnu-toolchain\avr\include\avr\sfr_defs.h \
  c:\program\ files\ (x86)\atmel\studio\7.0\toolchain\avr8\avr8-gnu-toolchain\avr\include\inttypes.h \
@@ -28,8 +29,9 @@ main.d main.o: .././main.c \
  c:\program\ files\ (x86)\atmel\studio\7.0\toolchain\avr8\avr8-gnu-toolchain\lib\gcc\avr\4.9.2\include\stdbool.h \
  ../src/ASF/common/utils/parts.h ../src/ASF/common/utils/interrupt.h \
  ../src/ASF/common/utils/interrupt/interrupt_avr8.h \
- ../src/ASF/mega/utils/progmem.h ../src/ASF/mega/utils/status_codes.h \
- .././POS_FUNCTIONS.h
+ ../src/ASF/mega/utils/progmem.h ../src/ASF/mega/utils/status_codes.h
+
+.././POS_FUNCTIONS.h:
 
 c:\program\ files\ (x86)\atmel\studio\7.0\toolchain\avr8\avr8-gnu-toolchain\avr\include\avr\io.h:
 
@@ -102,5 +104,3 @@ c:\program\ files\ (x86)\atmel\studio\7.0\toolchain\avr8\avr8-gnu-toolchain\lib\
 ../src/ASF/mega/utils/progmem.h:
 
 ../src/ASF/mega/utils/status_codes.h:
-
-.././POS_FUNCTIONS.h:

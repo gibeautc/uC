@@ -54,6 +54,7 @@ C_SRCS +=  \
 ../i2c_master.c \
 ../main.c \
 ../MPU9250.c \
+../POS_FUNCTIONS.c \
 ../SPI.c \
 ../src/ASF/common/boards/user_board/init.c \
 ../UART.c
@@ -70,6 +71,7 @@ Feedback.o \
 i2c_master.o \
 main.o \
 MPU9250.o \
+POS_FUNCTIONS.o \
 SPI.o \
 src/ASF/common/boards/user_board/init.o \
 UART.o
@@ -79,6 +81,7 @@ Feedback.o \
 i2c_master.o \
 main.o \
 MPU9250.o \
+POS_FUNCTIONS.o \
 SPI.o \
 src/ASF/common/boards/user_board/init.o \
 UART.o
@@ -88,6 +91,7 @@ Feedback.d \
 i2c_master.d \
 main.d \
 MPU9250.d \
+POS_FUNCTIONS.d \
 SPI.d \
 src/ASF/common/boards/user_board/init.d \
 UART.d
@@ -97,6 +101,7 @@ Feedback.d \
 i2c_master.d \
 main.d \
 MPU9250.d \
+POS_FUNCTIONS.d \
 SPI.d \
 src/ASF/common/boards/user_board/init.d \
 UART.d
@@ -115,6 +120,8 @@ LINKER_SCRIPT_DEP+=
 
 
 # AVR32/GNU C Compiler
+
+
 
 
 

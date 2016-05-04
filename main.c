@@ -20,6 +20,7 @@
 #include "SPI.h"
 #include "UART.h"
 #include "asf.h"
+#include "POS_FUNCTIONS.h"
 #define BUFSZ 128
 
 volatile unsigned long count_t=0;
@@ -87,6 +88,12 @@ int main(void)
 	
 	
 	_delay_ms(2000);
+	
+	while(1)
+	{
+		if(uart_getc()=='S'){record_window();}
+		if(uart_getc()=='P'){live_pos();}
+	}
 	
     while (1) 
     {
