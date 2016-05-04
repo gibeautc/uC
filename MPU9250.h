@@ -4,21 +4,46 @@
 
 #include <avr/pgmspace.h>
 
-void init_MPU(const uint8_t A_range, const uint8_t G_range, uint8_t SSel);
-void SPIinit_MPU(const uint8_t A_range, const uint8_t G_range);
-void writeReg(const uint8_t reg_addr, const uint8_t val, uint8_t SSel);
-void readReg(const uint8_t reg_addr, const uint8_t bytes, uint8_t *buf, uint8_t SSel);
-void SPIreadReg(const uint8_t reg_addr, uint8_t *buf);
-void SPIreadRegs(const uint8_t reg_addr, const uint8_t bytes, uint8_t *buf);
-void SPIwriteReg(const uint8_t reg_addr, const uint8_t val);
-void getMag(int16_t* mx, int16_t* my, int16_t* mz);
-void getGyro(int16_t* gx, int16_t* gy, int16_t* gz, uint8_t SSel);
-void SPIgetGyro(int16_t* gx, int16_t* gy, int16_t* gz);
-void getAccel(int16_t* ax, int16_t* ay, int16_t* az, uint8_t SSel);
-void SPIgetAccel(int16_t* ax, int16_t* ay, int16_t* az);
-uint8_t test_com(uint8_t SPI_Enable, const uint8_t SSel);
-void selfTest(float* differences, uint8_t SSel);
+void SPIinit_MPU(unsigned char sel, int sample_rate_div, int low_pass_filter);
+void SPIgetAccel(short* data, unsigned char sel);
+void SPIgetGyro(short* data, unsigned char sel);
+void SPIgetMag(short* data, unsigned char sel);
+uint8_t AK8963_whoami(unsigned char sel);
+unsigned int whoami(unsigned char sel);
+unsigned int set_acc_scale(unsigned char sel, int scale);
+unsigned int set_gyro_scale(unsigned char sel, int scale);
+void read_all(unsigned char sel);
+void calib_acc(unsigned char sel);
+void AK8963_calib_Magnetometer(unsigned char sel);
 
+#define READ_FLAG   0x80
+#define SUPPORTS_AK89xx_HIGH_SENS   (0x10)
+#define AKM_REG_WHOAMI      (0x00)
+
+#define AKM_REG_ST1         (0x02)
+#define AKM_REG_HXL         (0x03)
+#define AKM_REG_ST2         (0x09)
+
+#define AKM_REG_CNTL        (0x0A)
+#define AKM_REG_ASTC        (0x0C)
+#define AKM_REG_ASAX        (0x10)
+#define AKM_REG_ASAY        (0x11)
+#define AKM_REG_ASAZ        (0x12)
+
+#define AKM_DATA_READY      (0x01)
+#define AKM_DATA_OVERRUN    (0x02)
+#define AKM_OVERFLOW        (0x80)
+#define AKM_DATA_ERROR      (0x40)
+
+#define AKM_BIT_SELF_TEST   (0x40)
+
+#define AKM_POWER_DOWN          (0x00 | SUPPORTS_AK89xx_HIGH_SENS)
+#define AKM_SINGLE_MEASUREMENT  (0x01 | SUPPORTS_AK89xx_HIGH_SENS)
+#define AKM_FUSE_ROM_ACCESS     (0x0F | SUPPORTS_AK89xx_HIGH_SENS)
+#define AKM_MODE_SELF_TEST      (0x08 | SUPPORTS_AK89xx_HIGH_SENS)
+
+#define AKM_WHOAMI      (0x48)
+#define i2c_delay_ctrl 0x67
 
 
 //MPU9250 Register map
@@ -153,21 +178,21 @@ void selfTest(float* differences, uint8_t SSel);
 #define MPU9250_GYRO_FS_SEL_MASK        0x18
 #define MPU9250_FCHOICE_B_MASK          0x03
 
-#define MPU9250_GYRO_FULL_SCALE_250DPS  0x00//0
-#define MPU9250_GYRO_FULL_SCALE_500DPS  0x08//1
-#define MPU9250_GYRO_FULL_SCALE_1000DPS 0x10//2
-#define MPU9250_GYRO_FULL_SCALE_2000DPS 0x18//3
-
 //ACCEL_CONFIG register masks
 #define MPU9250_AX_ST_EN_MASK           0x80
 #define MPU9250_AY_ST_EN_MASK           0x40
 #define MPU9250_AZ_ST_EN_MASK           0x20
 #define MPU9250_ACCEL_FS_SEL_MASK       0x18
 
-#define MPU9250_FULL_SCALE_2G           0x00//0
-#define MPU9250_FULL_SCALE_4G           0x08//1
-#define MPU9250_FULL_SCALE_8G           0x10//2
-#define MPU9250_FULL_SCALE_16G          0x18//3
+#define BITS_FS_250DPS              0x00
+#define BITS_FS_500DPS              0x08
+#define BITS_FS_1000DPS             0x10
+#define BITS_FS_2000DPS             0x18
+
+#define BITS_FS_2G                  0x00
+#define BITS_FS_4G                  0x08
+#define BITS_FS_8G                  0x10
+#define BITS_FS_16G                 0x18
 
 //ACCEL_CONFIG_2 register masks
 #define MPU9250_ACCEL_FCHOICE_B_MASK    0xC0
@@ -322,28 +347,37 @@ void selfTest(float* differences, uint8_t SSel);
 #define MPU9250_DISABLE_XYZA_MASK       0x38
 #define MPU9250_DISABLE_XYZG_MASK       0x07
 
-//Magnetometer register maps
-#define MPU9250_MAG_ADDRESS             0x18
+//==============================================================================================//
+//									       AK8963 Registers	//
+//==============================================================================================//
 
-#define MPU9250_MAG_WIA                 0x00
-#define MPU9250_MAG_INFO                0x01
-#define MPU9250_MAG_ST1                 0x02
-#define MPU9250_MAG_XOUT_L              0x03
-#define MPU9250_MAG_XOUT_H              0x04
-#define MPU9250_MAG_YOUT_L              0x05
-#define MPU9250_MAG_YOUT_H              0x06
-#define MPU9250_MAG_ZOUT_L              0x07
-#define MPU9250_MAG_ZOUT_H              0x08
-#define MPU9250_MAG_ST2                 0x09
-#define MPU9250_MAG_CNTL1               0x0A
-#define MPU9250_MAG_CNTL2               0x0B
-#define MPU9250_MAG_ASTC                0x0C
-#define MPU9250_MAG_TS1                 0x0D
-#define MPU9250_MAG_TS2                 0x0E
-#define MPU9250_MAG_I2CDIS              0x0F
-#define MPU9250_MAG_ASAX                0x10
-#define MPU9250_MAG_ASAY                0x11
-#define MPU9250_MAG_ASAZ                0x12
+#define AK8963_I2C_ADDR             0x0C//0x18
+#define AK8963_Device_ID            0x48
+
+// Read-only Reg
+#define AK8963_WIA                  0x00
+#define AK8963_INFO                 0x01
+#define AK8963_ST1                  0x02
+#define AK8963_HXL                  0x03
+#define AK8963_HXH                  0x04
+#define AK8963_HYL                  0x05
+#define AK8963_HYH                  0x06
+#define AK8963_HZL                  0x07
+#define AK8963_HZH                  0x08
+#define AK8963_ST2                  0x09
+
+// Write/Read Reg
+#define AK8963_CNTL1                0x0A
+#define AK8963_CNTL2                0x0B
+#define AK8963_ASTC                 0x0C
+#define AK8963_TS1                  0x0D
+#define AK8963_TS2                  0x0E
+#define AK8963_I2CDIS               0x0F
+
+// Read-only Reg ( ROM )
+#define AK8963_ASAX                 0x10
+#define AK8963_ASAY                 0x11
+#define AK8963_ASAZ                 0x12
 
 //Magnetometer register masks
 #define MPU9250_WIA_MASK 0x48
@@ -363,5 +397,88 @@ void selfTest(float* differences, uint8_t SSel);
  
 #define MPU9250M_4800uT   ((float)0.6f)            // 0.6 uT/LSB
 #define Magnetometer_Sensitivity_Scale_Factor ((float)0.15f) 
+
+#define BIT_I2C_MST_VDDIO   (0x80)
+#define BIT_FIFO_EN         (0x40)
+#define BIT_DMP_EN          (0x80)
+#define BIT_FIFO_RST        (0x04)
+#define BIT_DMP_RST         (0x08)
+#define BIT_FIFO_OVERFLOW   (0x10)
+#define BIT_DATA_RDY_EN     (0x01)
+#define BIT_DMP_INT_EN      (0x02)
+#define BIT_MOT_INT_EN      (0x40)
+#define BITS_FSR            (0x18)
+#define BITS_LPF            (0x07)
+#define BITS_HPF            (0x07)
+#define BITS_CLK            (0x07)
+#define BIT_FIFO_SIZE_1024  (0x40)
+#define BIT_FIFO_SIZE_2048  (0x80)
+#define BIT_FIFO_SIZE_4096  (0xC0)
+#define BIT_RESET           (0x80)
+#define BIT_SLEEP           (0x40)
+#define BIT_S0_DELAY_EN     (0x01)
+#define BIT_S2_DELAY_EN     (0x04)
+#define BITS_SLAVE_LENGTH   (0x0F)
+#define BIT_SLAVE_BYTE_SW   (0x40)
+#define BIT_SLAVE_GROUP     (0x10)
+#define BIT_SLAVE_EN        (0x80)
+#define BIT_I2C_READ        (0x80)
+#define BITS_I2C_MASTER_DLY (0x1F)
+#define BIT_AUX_IF_EN       (0x20)
+#define BIT_ACTL            (0x80)
+#define BIT_LATCH_EN        (0x20)
+#define BIT_ANY_RD_CLR      (0x10)
+#define BIT_BYPASS_EN       (0x02)
+#define BITS_WOM_EN         (0xC0)
+#define BIT_LPA_CYCLE       (0x20)
+#define BIT_STBY_XA         (0x20)
+#define BIT_STBY_YA         (0x10)
+#define BIT_STBY_ZA         (0x08)
+#define BIT_STBY_XG         (0x04)
+#define BIT_STBY_YG         (0x02)
+#define BIT_STBY_ZG         (0x01)
+#define BIT_STBY_XYZA       (BIT_STBY_XA | BIT_STBY_YA | BIT_STBY_ZA)
+#define BIT_STBY_XYZG       (BIT_STBY_XG | BIT_STBY_YG | BIT_STBY_ZG)
+
+// Configuration Bits MPU-9250
+
+#define BIT_H_RESET 0x80
+#define BITS_CLKSEL 0x07
+#define MPU_CLK_SEL_PLLGYROX 0x01
+#define MPU_CLK_SEL_PLLGYROZ 0x03
+#define MPU_EXT_SYNC_GYROX 0x02
+#define BITS_FS_250DPS              0x00
+#define BITS_FS_500DPS              0x08
+#define BITS_FS_1000DPS             0x10
+#define BITS_FS_2000DPS             0x18
+#define BITS_FS_2G                  0x00
+#define BITS_FS_4G                  0x08
+#define BITS_FS_8G                  0x10
+#define BITS_FS_16G                 0x18
+#define BITS_FS_MASK                0x18
+#define BITS_DLPF_CFG_256HZ_NOLPF2  0x00
+#define BITS_DLPF_CFG_188HZ         0x01
+#define BITS_DLPF_CFG_98HZ          0x02
+#define BITS_DLPF_CFG_42HZ          0x03
+#define BITS_DLPF_CFG_20HZ          0x04
+#define BITS_DLPF_CFG_10HZ          0x05
+#define BITS_DLPF_CFG_5HZ           0x06
+#define BITS_DLPF_CFG_2100HZ_NOLPF  0x07
+#define BITS_DLPF_CFG_MASK          0x07
+#define BIT_INT_ANYRD_2CLEAR        0x10
+#define BIT_RAW_RDY_EN              0x01
+#define BIT_I2C_IF_DIS              0x10
+
+
+float Accel_data[3];
+float Temp;
+float Gyro_data[3];
+float Mag_data[3];
+ float Magnetometer_ASA[3];
+ int calib_data[3];
+
+float acc_divider;
+float gyro_divider;
+float mag_ASA;
 
 #endif /* _MPU9250_H_ */

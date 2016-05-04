@@ -6,344 +6,322 @@
  *  Author: Kody Conrad
  */
 #include <stdint.h>
-#include "twi_master.h"
+#include <util/delay.h>
 #include "MPU9250.h"
+#include "SPI.h"
+#include "i2c_master.h"
 #include <avr/io.h>
 #include <math.h>
-#define readbit 0x80
+#include "POS_FUNCTIONS.h"
 
-int16_t AG_SelfTest[6]; //Holds the self test results for accelerometer/Gyro
-int16_t magCalib[3]={0,0,0}, magBias[3]={0,0,0};
-int16_t accBias[3]={0,0,0}, gyroBias[3]={0,0,0};
-/*
-	MPU Master i2c mode test functions for Magnetometer.
-*/
-enum SPI{
-	SPI_Dis=0,
-	SPI_En=1// Set initial input parameters
-};
+	
+//unsigned char compass_addr, compass_sample_rate;
 
-enum Ascale {
-  AFS_2G = 0,
-  AFS_4G,
-  AFS_8G,
-  AFS_16G
-};
-
-enum Gscale {
-  GFS_250DPS = 0,
-  GFS_500DPS,
-  GFS_1000DPS,
-  GFS_2000DPS
-};
-
-enum Mscale {
-  MFS_14BITS = 0, // 0.6 mG per LSB
-  MFS_16BITS      // 0.15 mG per LSB
-};
-
-uint8_t test_com(uint8_t SPI_Enable, const uint8_t SSel){
-        uint8_t response[1];
-	switch (SPI_Enable)
-	{
-	case 0:
-		readReg(0x75 , 1 , response, SSel);
-		if(response[0] == 0x71)
-			return 1;
-		else
-			return 0;	
-	break;
-	default:
-		SPIreadRegs(0x75 , 1 , response);	
-			if(response[0] == 0x71)
-			return 1;
-		else
-			return 0;
-	break;
-	}
-	return 0;
+void SPIinit_MPU(unsigned char sel, int sample_rate_div, int low_pass_filter){
+	//unsigned char data[6];
+	//uint8_t i;
+	
+	spi_writeReg(sel, MPU9250_PWR_MGMT_1, 0x80);
+	_delay_ms(10);
+	spi_writeReg(sel, MPU9250_PWR_MGMT_1, 0x01);
+	_delay_ms(10);
+	spi_writeReg(sel, MPU9250_PWR_MGMT_2, 0x00);
+	_delay_ms(10);
+	spi_writeReg(sel, MPU9250_CONFIG, low_pass_filter);
+	_delay_ms(10);
+	spi_writeReg(sel, MPU9250_GYRO_CONFIG, 0x18);
+	_delay_ms(10);
+	spi_writeReg(sel, MPU9250_ACCEL_CONFIG, 0x08);
+	_delay_ms(10);
+	//BW:20Hz Delay:19.80ms 1kHz Rate 
+	spi_writeReg(sel, MPU9250_ACCEL_CONFIG2, 0x09);
+	_delay_ms(10);
+	spi_writeReg(sel, MPU9250_INT_PIN_CFG, 0x30);
+	_delay_ms(10);
+	spi_writeReg(sel, MPU9250_USER_CTRL, 0x20);
+	_delay_ms(10);
+	spi_writeReg(sel, MPU9250_I2C_MST_CTRL, 0x0D);
+	_delay_ms(10);
+	//MAG_CNTL2 Setup Via AUX I2C - Reset Chip w/ 0x01
+	spi_writeReg(sel, MPU9250_I2C_SLV0_ADDR, AK8963_I2C_ADDR);
+	spi_writeReg(sel, MPU9250_I2C_SLV0_REG, AK8963_CNTL2);
+	spi_writeReg(sel, MPU9250_I2C_SLV0_DO, 0x01);
+	spi_writeReg(sel, MPU9250_I2C_SLV0_CTRL, 0x81);
+	_delay_ms(10);
+	//MAG_CNTL1 Setup Via AUX I2C continuous mode 1=0x12 2=0x16
+	spi_writeReg(sel, MPU9250_I2C_SLV0_REG, AK8963_CNTL1);
+	spi_writeReg(sel, MPU9250_I2C_SLV0_DO, 0x12);
+	spi_writeReg(sel, MPU9250_I2C_SLV0_CTRL, 0x81);
+	
+	set_acc_scale(sel, 2);
+	set_gyro_scale(sel, 250);
+	
+	return;
 }
 
-//differences is a percent off factory set calibration;
-//differences: should be array of 6 floats.
-void selfTest(float* differences, uint8_t SSel){
-	uint8_t rawData[6] = {0,0,0,0,0,0};
-	uint8_t selfTestAcc[3], selfTestGyro[3];
-	int16_t gAvg[3], aAvg[3], gSTAvg[3], aSTAvg[3];
-	float factoryTrim[6];
-	int i = 0;
-	int FS=0;
-	//SETUP SENSOR FOR TESTING
-	writeReg(MPU9250_SMPLRT_DIV, 0x00, SSel);
-	writeReg(MPU9250_CONFIG, 0x02, SSel);//92HZ
-	writeReg(MPU9250_GYRO_CONFIG, 0x01, SSel);//250DPS
-	writeReg(MPU9250_ACCEL_CONFIG2, 0x02, SSel);//1kHz rate @ 92Hz bandwidth
-	writeReg(MPU9250_ACCEL_CONFIG, 0x01, SSel);//2g accelerometer
+//==============================================================================================//
+//							                       Calibration Code	//
+//==============================================================================================// 
+/*-----------------------------------------------------------------------------------------------
+                                READ ACCELEROMETER CALIBRATION
+usage: call this function to read accelerometer data. Axis represents selected axis:
+0 -> X axis
+1 -> Y axis
+2 -> Z axis
+returns Factory Trim value
+-----------------------------------------------------------------------------------------------*/
+void calib_acc(unsigned char sel)
+{
+  uint8_t response[4];
+  int temp_scale;
+  //READ CURRENT ACC SCALE
+  temp_scale=spi_writeReg(sel, MPU9250_ACCEL_CONFIG|READ_FLAG, 0x00);
+  set_acc_scale(sel, BITS_FS_8G);
+  //ENABLE SELF TEST need modify
+ 
+  spi_readRegs(sel, MPU9250_SELF_TEST_X_ACCEL, 4, response);
+  calib_data[0]=((response[0]&11100000)>>3)|((response[3]&00110000)>>4);
+  calib_data[1]=((response[1]&11100000)>>3)|((response[3]&00001100)>>2);
+  calib_data[2]=((response[2]&11100000)>>3)|((response[3]&00000011));
+ 
+  set_acc_scale(sel, temp_scale);
+}
+
+void AK8963_calib_Magnetometer(unsigned char sel)
+{
+	uint8_t response[3];
+	float data;
+	int i;
 	
-	for(i=0; i<200; i++)
+	spi_writeReg(sel, MPU9250_I2C_SLV4_ADDR,AK8963_I2C_ADDR|READ_FLAG); //Set the I2C slave address of AK8963 and set for read.
+	_delay_ms(10);
+	spi_writeReg(sel, MPU9250_I2C_SLV4_REG, AK8963_ASAX); //I2C slave 0 register address from where to begin data transfer
+	_delay_ms(10);
+	spi_writeReg(sel, MPU9250_I2C_SLV4_CTRL, 0x83); //Read 3 bytes from the magnetometer
+
+	_delay_us(100);
+	spi_readRegs(sel, MPU9250_EXT_SENS_DATA_00, 3, response);
+	
+	for(i=0; i<3; i++)
 	{
-		readReg(MPU9250_ACCEL_XOUT_H, 6, rawData, SSel);
-		aAvg[0]	+= (int16_t)(((int16_t)rawData[0] << 8) | rawData[1]);
-		aAvg[1]	+= (int16_t)(((int16_t)rawData[2] << 8) | rawData[3]);
-		aAvg[2]	+= (int16_t)(((int16_t)rawData[4] << 8) | rawData[5]);
-	
-		readReg(MPU9250_GYRO_XOUT_H, 6, rawData, SSel);
-		gAvg[0]	+= (int16_t)(((int16_t)rawData[0] << 8) | rawData[1]);
-		gAvg[1]	+= (int16_t)(((int16_t)rawData[2] << 8) | rawData[3]);
-		gAvg[2]	+= (int16_t)(((int16_t)rawData[4] << 8) | rawData[5]);
-	} 
-
-	for(i=0; i<3; i++){
-		aAvg[i] /= 200;
-		gAvg[i] /= 200;
-	}
-	
-	//setup gyro/accel for selftest
-	writeReg(MPU9250_ACCEL_CONFIG, 0xE0, SSel);
-	writeReg(MPU9250_GYRO_CONFIG, 0xE0, SSel);
-	
-	for(i=0; i<200; i++)
-	{
-		readReg(MPU9250_ACCEL_XOUT_H, 6, rawData, SSel);
-		aSTAvg[0]+= (int16_t)(((int16_t)rawData[0] << 8) | rawData[1]);
-		aSTAvg[1]+= (int16_t)(((int16_t)rawData[2] << 8) | rawData[3]);
-		aSTAvg[2]+= (int16_t)(((int16_t)rawData[4] << 8) | rawData[5]);
-	
-		readReg(MPU9250_GYRO_XOUT_H, 6, rawData, SSel);
-		gSTAvg[0]+= (int16_t)(((int16_t)rawData[0] << 8) | rawData[1]);
-		gSTAvg[1]+= (int16_t)(((int16_t)rawData[2] << 8) | rawData[3]);
-		gSTAvg[2]+= (int16_t)(((int16_t)rawData[4] << 8) | rawData[5]);
-	} 
-
-	for(i=0; i<3; i++){
-		aSTAvg[i] /= 200;
-		gSTAvg[i] /= 200;
-	}
-	
-	//setup gyro/accel for selftest
-	writeReg(MPU9250_ACCEL_CONFIG, 0x00, SSel);
-	writeReg(MPU9250_GYRO_CONFIG, 0x00, SSel);
-
-	// Retrieve accelerometer and gyro factory Self-Test Code from USR_Reg
-	readReg(MPU9250_SELF_TEST_X_ACCEL, 3, selfTestAcc, SSel); // X-axis accel self-test results
-	readReg(MPU9250_SELF_TEST_X_GYRO, 3, selfTestGyro, SSel); // X-axis accel self-test results
-
-	// Retrieve factory self-test value from self-test code reads
-	//FT[Xa] factory trim calculation
-	factoryTrim[0] = (float)(2620/1<<FS)*(pow( 1.01 , ((float)selfTestAcc[0] - 1.0) )); 
-	// FT[Ya] factory trim calculation
-	factoryTrim[1] = (float)(2620/1<<FS)*(pow( 1.01 , ((float)selfTestAcc[1] - 1.0) )); 
-	// FT[Za] factory trim calculation
-	factoryTrim[2] = (float)(2620/1<<FS)*(pow( 1.01 , ((float)selfTestAcc[2] - 1.0) ));
-	// FT[Xg] factory trim calculation
-	factoryTrim[3] = (float)(2620/1<<FS)*(pow( 1.01 , ((float)selfTestGyro[0] - 1.0) ));
-	// FT[Yg] factory trim calculation
-	factoryTrim[4] = (float)(2620/1<<FS)*(pow( 1.01 , ((float)selfTestGyro[1] - 1.0) ));
-	// FT[Zg] factory trim calculation
-	factoryTrim[5] = (float)(2620/1<<FS)*(pow( 1.01 , ((float)selfTestGyro[2] - 1.0) ));
-
-	// Report results as a ratio of (STR - FT)/FT; the change from Factory Trim of the Self-Test Response
-	// To get percent, must multiply by 100
-	for (i = 0; i < 3; i++) {
-		differences[i]   = 100.0*((float)(aSTAvg[i] - aAvg[i]))/factoryTrim[i];   //percent differences
-		differences[i+3] = 100.0*((float)(gSTAvg[i] - gAvg[i]))/factoryTrim[i+3]; //percent differences
+		data=response[i];
+		Magnetometer_ASA[i]=((data-128)/256+1)*Magnetometer_Sensitivity_Scale_Factor;
 	}
 }
 
-void writeReg(const uint8_t reg_addr, const uint8_t val, uint8_t SSel){
-	uint8_t dataArr[2];
-	dataArr[0] = reg_addr;
-	dataArr[1] = val;
-	twi_start_wr(SSel, dataArr, 2);
-	while(twi_busy()){}
-	return;
-}
-
-void readReg(const uint8_t reg_addr_strt, const uint8_t bytes, uint8_t *buf, uint8_t SSel){
-	//uint8_t databuf[bytes];
-	uint8_t reg[1];
-	reg[0]=reg_addr_strt;
-	twi_start_wr(SSel, reg, 1);
-	while(twi_busy()){};
-	twi_start_rd(SSel, buf, bytes);
-	return;
-}
-//Write=0MSB Read=1MSB
-void SPIwriteReg(const uint8_t reg_addr, const uint8_t val){
-	
-        SPDR=reg_addr;
-	while(bit_is_clear(SPSR,SPIF)){}
-	SPDR=val;
-	while(bit_is_clear(SPSR,SPIF)){}
-	return;	
-}
-
-void SPIreadReg(const uint8_t reg_addr, uint8_t *data){
-	SPDR=(reg_addr | readbit);
-	while(bit_is_clear(SPSR,SPIF)){};
-	SPDR=0xFF;
-	while(bit_is_clear(SPSR,SPIF)){};
-	data[0]=SPDR;
-	return;
-}
-
-void SPIreadRegs(const uint8_t reg_addr, const uint8_t bytes, uint8_t *data){
-	int i=0;
-	SPDR=(reg_addr | readbit);
-	while(bit_is_clear(SPSR,SPIF)){};
-	SPDR=0xFF;
-	while(bit_is_clear(SPSR,SPIF)){};
-	for(i=0; i<bytes; i++)
-	{
-		data[i]=SPDR;
-		SPDR=0xFF;
-		while(bit_is_clear(SPSR,SPIF)){};
-	}	
-	return;
-} 
-
-
-void writeMagReg(const uint8_t reg_addr, const uint8_t val){
-	uint8_t dataArr[2];
-	dataArr[0] = reg_addr;
-	dataArr[1] = val;
-	twi_start_wr(MPU9250_MAG_ADDRESS, dataArr, 2);
-	return;
-}
-
-void readMagReg(const uint8_t reg_addr_strt, const uint8_t bytes, uint8_t *buf){
-	uint8_t reg[1];
-	reg[0]=reg_addr_strt;
-	twi_start_wr(MPU9250_MAG_ADDRESS, reg, 1);
-	while(twi_busy()){};
-	twi_start_rd(MPU9250_MAG_ADDRESS, buf, bytes);
-	return;
-}
-
-void getAccel(int16_t* ax, int16_t* ay, int16_t* az, uint8_t SSel){
+void SPIgetAccel(short* data, unsigned char sel){
 	uint8_t AccelData[6];
 	
-	readReg(MPU9250_ACCEL_XOUT_H, 6, AccelData, SSel);
+	spi_readRegs(sel, MPU9250_ACCEL_XOUT_H, 6, AccelData);
 	
-	*ax = (((int16_t)AccelData[0]) << 8) | AccelData[1];
-	*ay = (((int16_t)AccelData[2]) << 8) | AccelData[3];
-	*az = (((int16_t)AccelData[4]) << 8) | AccelData[5];
+	data[0] = (((int16_t)AccelData[0]) << 8) | AccelData[1];
+	data[1] = (((int16_t)AccelData[2]) << 8) | AccelData[3];
+	data[2] = (((int16_t)AccelData[4]) << 8) | AccelData[5];
 	return;
 }
 
-void SPIgetAccel(int16_t* ax, int16_t* ay, int16_t* az){
-	uint8_t AccelData[6];
-	
-	SPIreadRegs(MPU9250_ACCEL_XOUT_H, 6, AccelData);
-	
-	*ax = (((int16_t)AccelData[0]) << 8) | AccelData[1];
-	*ay = (((int16_t)AccelData[2]) << 8) | AccelData[3];
-	*az = (((int16_t)AccelData[4]) << 8) | AccelData[5];
-	return;
-}
-
-void getGyro(int16_t* gx, int16_t* gy, int16_t* gz, uint8_t SSel){
+void SPIgetGyro(short* data, unsigned char sel){
 	uint8_t GyroData[6];
 	
-	readReg(MPU9250_ACCEL_XOUT_H, 6, GyroData, SSel);
+	spi_readRegs(sel, MPU9250_GYRO_XOUT_H, 6, GyroData);
 	
-	*gx = (((int16_t)GyroData[0]) << 8) | GyroData[1];
-	*gy = (((int16_t)GyroData[2]) << 8) | GyroData[3];
-	*gz = (((int16_t)GyroData[4]) << 8) | GyroData[5];
+	data[0] = (((int16_t)GyroData[0]) << 8) | GyroData[1];
+	data[1] = (((int16_t)GyroData[2]) << 8) | GyroData[3];
+	data[2] = (((int16_t)GyroData[4]) << 8) | GyroData[5];
 	return;
 }
 
-void SPIgetGyro(int16_t* gx, int16_t* gy, int16_t* gz){
-	uint8_t GyroData[6];
-	
-	SPIreadRegs(MPU9250_ACCEL_XOUT_H, 6, GyroData);
-	
-	*gx = (((int16_t)GyroData[0]) << 8) | GyroData[1];
-	*gy = (((int16_t)GyroData[2]) << 8) | GyroData[3];
-	*gz = (((int16_t)GyroData[4]) << 8) | GyroData[5];
-	return;
+void SPIgetMag(short* data, unsigned char sel){
+//uint8_t ST1[2];
+uint8_t MagData[7];
+
+spi_writeReg(sel, MPU9250_I2C_SLV0_ADDR, AK8963_I2C_ADDR|READ_FLAG); //Set the I2C slave address of AK8963 and set for read.
+spi_writeReg(sel, MPU9250_I2C_SLV0_REG, AK8963_HXL); //I2C slave 0 register address from where to begin data transfer
+spi_writeReg(sel, MPU9250_I2C_SLV0_CTRL, 0x87);
+
+_delay_ms(.1);
+spi_readRegs(sel, MPU9250_EXT_SENS_DATA_00, 7, MagData);
+
+data[0] = (((int16_t)MagData[1]) << 8) | MagData[0];
+data[1] = (((int16_t)MagData[3]) << 8) | MagData[2];
+data[2] = (((int16_t)MagData[5]) << 8) | MagData[4];
 }
 
-void getMag(int16_t* mx, int16_t* my, int16_t* mz){
-	//uint8_t ST1[1];
-	uint8_t MagData[6];
 
-	//If problems occur possibly look at changing ST1[1] -> ST1 and then using readMagReg(MPU9250_MAG_ST1, 1, &ST1)
-	//do
-	//{//
-	//	readMagReg(MPU9250_MAG_ST1, 1, ST1); //Looking for data ready
-	//}
-	//while (!(ST1[0]&0x01));
-	
-	// Read magnetometer data
-	
-	readMagReg(MPU9250_MAG_XOUT_L, 6, MagData);
-	
-	*mx = (((int16_t)MagData[1]) << 8) | MagData[0];
-	*my = (((int16_t)MagData[3]) << 8) | MagData[2];
-	*mz = (((int16_t)MagData[5]) << 8) | MagData[4];
+//==============================================================================================//
+//									              Who Am I?	//
+//==============================================================================================//  
+/*-----------------------------------------------------------------------------------------------
+                                            WHO AM I?
+usage: call this function to know if SPI is working correctly. It checks the I2C address of the
+mpu9250 which should be 104 when in SPI mode.
+returns the I2C address (104)
+-----------------------------------------------------------------------------------------------*/
+unsigned int whoami(unsigned char sel)
+{
+  unsigned int response;
+  response=spi_writeReg(sel, MPU9250_WHO_AM_I|READ_FLAG, 0x00);
+  return response;
 }
 
-void init_MPU(const uint8_t A_range, const uint8_t G_range, uint8_t SSel){
-	writeReg(MPU9250_PWR_MGMT_1, 0x80, SSel);
-/*	writeReg(MPU9250_PWR_MGMT_1, 0x01, SSel);
-	writeReg(MPU9250_PWR_MGMT_2, 0x00, SSel);
-	writeReg(MPU9250_CONFIG, 0x01, SSel);
-	writeReg(MPU9250_USER_CTRL, 0x01, SSel);
-	writeReg(MPU9250_GYRO_CONFIG, G_range, SSel);
-	writeReg(MPU9250_ACCEL_CONFIG, A_range, SSel);
-	writeReg(MPU9250_ACCEL_CONFIG2, 0x09, SSel);
-	writeReg(0x37, 0x30, SSel);//int_pin_cfg(register) i2c_lost_arb enable/i2c_slv4_nack enablea
-	writeReg(0x6A, 0x20, SSel);//user_ctrl
-	writeReg(0x24, 0x0D, SSel);//i2c_mst_ctrl
-	writeReg(0x25, MPU9250_MAG_ADDRESS, SSel);//slv0_addr
-	writeReg(0x26, MPU9250_MAG_CNTL2, SSel);//slv0_reg
-	writeReg(0x63, 0x01, SSel); //slv0_DO
-	writeReg(0x27, 0x81, SSel);//slv0_ctrl  enable i2c/set 1 byte
-	writeReg(0x26, MPU9250_MAG_CNTL1, SSel);
-	writeReg(0x63, 0x12, SSel);
-	writeReg(0x27, 0x81, SSel);
-	return;*/
-
-	//Global Setup:
-	writeReg(MPU9250_PWR_MGMT_1, 0x00, SSel); //Set internal oscillator
-	writeReg(MPU9250_PWR_MGMT_2, 0x00, SSel); //Enable all Axis-Gyro/Accel
-	//Configure Gyroscope:
-	writeReg(MPU9250_GYRO_CONFIG, G_range, SSel);
-	writeReg(MPU9250_CONFIG, 0x06, SSel); //Low pass 5Hz Gyro 33.48ms Delay
-	//Configure Accelerometer:
-	writeReg(MPU9250_ACCEL_CONFIG, A_range, SSel);
-	writeReg(MPU9250_ACCEL_CONFIG2, 0x06, SSel); //Low pass 5Hz Accel 66.96ms Delay
-	//Configure Magnetometer:
-	//writeReg(MPU9250_INT_PIN_CFG, 0x02);
-	//writeMagReg(MPU9250_MAG_CNTL2, 0x00);//Changed from 01
-	//writeMagReg(MPU9250_MAG_CNTL1, 0x00);//Changed from 12
- //Old Initilization
-	return;
+uint8_t AK8963_whoami(unsigned char sel)
+{
+	uint8_t response;
+	spi_writeReg(sel, MPU9250_I2C_SLV0_ADDR, AK8963_I2C_ADDR|READ_FLAG); //Set the I2C slave address of AK8963 and set for read.
+	spi_writeReg(sel, MPU9250_I2C_SLV0_REG, AK8963_WIA); //I2C slave 0 register address from where to begin data transfer
+	spi_writeReg(sel, MPU9250_I2C_SLV0_CTRL, 0x81); //Read 1 byte from the magnetometer
+	
+	_delay_us(100);
+	response=spi_writeReg(sel, MPU9250_EXT_SENS_DATA_00|READ_FLAG, 0x00);    //Read I2C
+	
+	return response;
 }
 
-void SPIinit_MPU(const uint8_t A_range, const uint8_t G_range){
-	SPIwriteReg(MPU9250_PWR_MGMT_1, 0x80);
-	SPIwriteReg(MPU9250_PWR_MGMT_1, 0x01);
-	SPIwriteReg(MPU9250_PWR_MGMT_2, 0x00);
-	SPIwriteReg(MPU9250_CONFIG, 0x01);
-	SPIwriteReg(MPU9250_USER_CTRL, 0x01);
-	SPIwriteReg(MPU9250_GYRO_CONFIG, G_range);
-	SPIwriteReg(MPU9250_ACCEL_CONFIG, A_range);
-	SPIwriteReg(MPU9250_ACCEL_CONFIG2, 0x09);
-	SPIwriteReg(0x37, 0x30);//int_pin_cfg(register) i2c_lost_arb enable/i2c_slv4_nack enablea
-	SPIwriteReg(0x6A, 0x20);//user_ctrl
-	SPIwriteReg(0x24, 0x0D);//i2c_mst_ctrl
-	SPIwriteReg(0x25, MPU9250_MAG_ADDRESS);//slv0_addr
-	SPIwriteReg(0x26, MPU9250_MAG_CNTL2);//slv0_reg
-	SPIwriteReg(0x63, 0x01); //slv0_DO
-	SPIwriteReg(0x27, 0x81);//slv0_ctrl  enable i2c/set 1 byte
-	SPIwriteReg(0x26, MPU9250_MAG_CNTL1);
-	SPIwriteReg(0x63, 0x12);
-	SPIwriteReg(0x27, 0x81);
-	return;
+void read_all(unsigned char sel){
+	uint8_t response[21];
+	int16_t bit_data;
+	float data;
+	int i;
+	
+	//Send I2C command at first
+	spi_writeReg(sel, MPU9250_I2C_SLV0_ADDR, AK8963_I2C_ADDR|READ_FLAG); //Set the I2C slave addres of AK8963 and set for read.
+	_delay_ms(3);
+	spi_writeReg(sel, MPU9250_I2C_SLV0_REG, AK8963_HXL); //I2C slave 0 register address from where to begin data transfer
+	_delay_ms(3);
+	spi_writeReg(sel, MPU9250_I2C_SLV0_CTRL, 0x87); //Read 7 bytes from the magnetometer
+	//must start your read from AK8963A register 0x03 and read seven bytes so that upon read of ST2 register 0x09 the AK8963A will unlatch the data registers for the next measurement.
+	
+	//wait(0.001);
+	_delay_ms(2);
+
+	spi_readRegs(sel, MPU9250_ACCEL_XOUT_H, 21, response);
+	
+	//Get accelerometer value
+	 for(i=0; i<3; i++)
+	 {
+		 bit_data=((int16_t)response[i*2]<<8)|response[i*2+1];
+		 data=(float)bit_data;
+		 Accel_data[i]=data/acc_divider;
+	 }
+	 //Get temperature
+		 bit_data=((int16_t)response[i*2]<<8)|response[i*2+1];
+		 data=(float)bit_data;
+		 Temp=((data-21)/333.87)+21;
+	 //Get gyroscope value
+	 for(i=4; i<7; i++)
+	 {
+		 bit_data=((int16_t)response[i*2]<<8)|response[i*2+1];
+		 data=(float)bit_data;
+		 Gyro_data[i-4]=data/gyro_divider;
+	 }
+	 //Get Magnetometer value
+	 for(i=7; i<10; i++)
+	 {
+		 bit_data=((int16_t)response[i*2+1]<<8)|response[i*2];
+		 data=(float)bit_data;
+		 Mag_data[i-7]=data;
+	 }
 }
 
-void mpu_AG_Calibration(){
+/*-----------------------------------------------------------------------------------------------
+                                        ACCELEROMETER SCALE
+usage: call this function at startup, after initialization, to set the right range for the
+accelerometers. Suitable ranges are:
+BITS_FS_2G
+BITS_FS_4G
+BITS_FS_8G
+BITS_FS_16G
+returns the range set (2, 4, 8, or 16)
+-----------------------------------------------------------------------------------------------*/
+unsigned int set_acc_scale(unsigned char sel, int scale){
+  unsigned int temp_scale;
+  spi_writeReg(sel, MPU9250_ACCEL_CONFIG, scale);
+    
+  switch (scale)
+  {
+    case BITS_FS_2G:
+      acc_divider=16384;
+    break;
+    case BITS_FS_4G:
+      acc_divider=8192;
+    break;
+    case BITS_FS_8G:
+      acc_divider=4096;
+    break;
+    case BITS_FS_16G:
+      acc_divider=2048;
+    break;   
+  }
+ 
+  temp_scale=spi_writeReg(sel, MPU9250_ACCEL_CONFIG|READ_FLAG, 0x00);
+    
+  switch (temp_scale)
+  {
+    case BITS_FS_2G:
+      temp_scale=2;
+    break;
+    case BITS_FS_4G:
+      temp_scale=4;
+    break;
+    case BITS_FS_8G:
+      temp_scale=8;
+    break;
+    case BITS_FS_16G:
+      temp_scale=16;
+    break;   
+  }
+  return temp_scale;
+}
 
+//==============================================================================================//
+//									        Gyroscope Scale	//
+//==============================================================================================// 
+/*-----------------------------------------------------------------------------------------------
+                                        GYROSCOPE SCALE
+usage: call this function at startup, after initialization, to set the right range for the
+gyroscopes. Suitable ranges are:
+BITS_FS_250DPS
+BITS_FS_500DPS
+BITS_FS_1000DPS
+BITS_FS_2000DPS
+returns the range set (250, 500, 1000 or 2000)
+-----------------------------------------------------------------------------------------------*/
+unsigned int set_gyro_scale(unsigned char sel, int scale)
+{
+  unsigned int temp_scale;
+  spi_writeReg(sel, MPU9250_GYRO_CONFIG, scale);
+  switch (scale)
+  {
+    case BITS_FS_250DPS:
+      gyro_divider=131;
+    break;
+    case BITS_FS_500DPS:
+      gyro_divider=65.5;
+    break;
+    case BITS_FS_1000DPS:
+      gyro_divider=32.8;
+    break;
+    case BITS_FS_2000DPS:
+      gyro_divider=16.4;
+    break;   
+  }
+  
+  temp_scale=spi_writeReg(sel, MPU9250_GYRO_CONFIG|READ_FLAG, 0x00);
+  
+  switch (temp_scale)
+  {
+    case BITS_FS_250DPS:
+      temp_scale=250;
+    break;
+    case BITS_FS_500DPS:
+      temp_scale=500;
+    break;
+    case BITS_FS_1000DPS:
+      temp_scale=1000;
+    break;
+    case BITS_FS_2000DPS:
+      temp_scale=2000;
+    break;   
+  }
+  return temp_scale;
 }
