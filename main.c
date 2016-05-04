@@ -115,9 +115,9 @@ int main(void)
 	
 	while(1)
 	{
-		//if(uart_getc()=='S'){record_window();}
+		if(uart_getc()=='S'){record_window();}
 		//if(uart_getc()=='S'){live_pos();}
-		if(uart_getc()=='S'){read_back(save_window());}
+		//if(uart_getc()=='S'){read_back(save_window());}
 		//if(uart_getc()=='S'){test_mem();}
 		
 	}

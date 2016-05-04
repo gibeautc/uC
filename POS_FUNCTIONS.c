@@ -22,11 +22,11 @@ void record_window()
 	uart_puts("*TRecording....*");
 	count_t=0;
 	struct POS temp_pos;
-	while(count_t<20000)
+	while(1)
 	{
 	 //_delay_ms(1);
 	 read_all(sensor1_cs);
-	 
+	 if(count_t>30000){count_t=0;}
 	 temp_pos.t=count_t;
 	 temp_pos.a_x=Accel_data[0];
 	 temp_pos.a_y=Accel_data[1];
@@ -63,7 +63,7 @@ void live_pos()
 	float fZg=0;
 	float alpha=0.5f;
 	
-	while(count_t<20000)
+	while(1)
 	{	
 		//_delay_ms(1);
 		read_all(sensor1_cs);
