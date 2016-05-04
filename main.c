@@ -43,6 +43,30 @@ int main(void)
 	uart_init();
 	init_tcnt2();
 	
+	
+	//*******SRAM_INIT and testing**********
+	if(sram_init()==1)
+	{
+		uart_puts("*Tsram_init PASSED\n*");
+	}
+	else
+	{
+		uart_puts("*Tsram_init FAILED\n*");
+	}// init sram and check status
+	
+	sram_write(100,100,0,150);
+	
+	if(sram_read(100,100,0)==150)
+	{
+		uart_puts("*Tsram write/read PASSED\n*");
+	}
+	else
+	{
+		uart_puts("*Tsram write/read FAILED\n*");
+	}// init sram and check status)
+	//*******End SRAM init and TESTING
+	
+	
 	_delay_ms(10);
 	SPIinit_MPU(sensor1_cs, 1, BITS_DLPF_CFG_188HZ);
 	_delay_ms(10);
@@ -91,8 +115,11 @@ int main(void)
 	
 	while(1)
 	{
-		if(uart_getc()=='S'){record_window();}
-		if(uart_getc()=='P'){live_pos();}
+		//if(uart_getc()=='S'){record_window();}
+		//if(uart_getc()=='S'){live_pos();}
+		if(uart_getc()=='S'){read_back(save_window());}
+		//if(uart_getc()=='S'){test_mem();}
+		
 	}
 	
     while (1) 

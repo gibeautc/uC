@@ -7,6 +7,19 @@
 #include <avr/io.h>
 #include <util/delay.h>
 #include "SPI.h"
+#include "UART.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <avr/interrupt.h>
+#include <math.h>
+#include <string.h>
+
+#define readbit 0x80
+#define sram_READ 0x03
+#define sram_WRITE 0x02
+#define sram_RDMR 0x05
+#define sram_WRMR 0x01
+
 
 #define readbit 0x80
 
@@ -113,4 +126,79 @@ void spi_readRegs(unsigned char sel, unsigned char reg_addr,
 	deselect(sel);
 	_delay_us(50);
 }
+
+
+//SRAM setup, should return 1 if success and 0 if failure
+uint8_t sram_init()
+{
+	add_l=0;
+	add_m=0;
+	add_h=0;
+	
+	select(sram_cs);
+	transfer(sram_WRMR);
+	transfer(0x00);
+	unsigned char test=transfer(sram_RDMR);
+	deselect(sram_cs);
+	if(test==0)
+	{
+		return 1;
+	}
+	else
+	{
+		return 0;
+	}
+	
+}
+
+
+void add_inc()
+{
+	if(add_l==255 && add_m==255 && add_h==1){uart_puts("*TMemory Over Flow*");while(1){}}//add in user feed back
+	
+	if(add_l==255)
+	{
+		add_l=0;
+		if(add_m==255)
+		{
+			add_m=0;
+			add_h=1;
+		}
+		else{add_m++;}
+	}
+	else{add_l++;}
+		//char buf[20];
+		//memset(buf, 0, 20);
+		//snprintf(buf, 20, "*TL:%d*", add_l);
+		//uart_puts(buf);
+
+}//end add_inc
+
+
+uint8_t sram_read(uint8_t low,uint8_t mid, uint8_t high)
+{
+	select(sram_cs);
+	transfer(sram_READ);
+	transfer(high);
+	transfer(mid);
+	transfer(low);
+	uint8_t temp=transfer(0xFF);
+	deselect(sram_cs);
+	add_inc();
+	return temp;
+}
+
+void sram_write(uint8_t low,uint8_t mid, uint8_t high, uint8_t data)
+{
+	select(sram_cs);
+	transfer(sram_WRITE);
+	transfer(high);
+	transfer(mid);
+	transfer(low);
+	transfer(data);
+	deselect(sram_cs);
+	add_inc();
+}
+
+
 

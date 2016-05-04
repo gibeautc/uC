@@ -19,10 +19,18 @@ struct POS{
 	
 
 volatile unsigned long count_t;
+unsigned long count;
 
 
 void record_window(void);
 void live_pos(void);
 void print_record(struct POS pos);
+int save_window(void);
+void mem_reset(void);
+void test_mem(void);
+void read_back(int count);
+void store_pos(struct POS pos);
+struct POS read_mem_pos(void);
+void print_mem(void);
 
 #endif /* SPI_H_ */
